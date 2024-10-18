@@ -132,6 +132,6 @@ APP.router.add_post("/api/messages", messages)
 
 if __name__ == "__main__":
     try:
-        web.run_app(APP)
+        web.run_app(APP, port=CONFIG.PORT)
     except Exception as error:
         raise error
