@@ -63,7 +63,7 @@ class MyBot(ActivityHandler):
 class DefaultConfig:
     """ Bot Configuration """
 
-    PORT = 3978
+    # PORT = 3978
     # APP_ID = ""
     # APP_PASSWORD = ""
     APP_ID = "2dc376e5-3cc8-4be0-ba93-d1d1e279d7d2"
@@ -132,6 +132,6 @@ APP.router.add_post("/api/messages", messages)
 
 if __name__ == "__main__":
     try:
-        web.run_app(APP, port=CONFIG.PORT)
+        web.run_app(APP)
     except Exception as error:
         raise error
