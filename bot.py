@@ -12,9 +12,8 @@ class MyBot(ActivityHandler):
         sys_id = "6dbf66761b6f7510acf9c9541a4bcb3e"  # The sys_id for the API
 
         # Call the external API
-        api_url = "https://snowassistant.azurewebsites.net/api/user_query"
+        api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/messages?code=xjQnL2hYS78iWva_QrpUk3plEg_S84CwaNS6YZNIqJY1AzFu8ROTkg=="
         payload = {
-            "sys_id": sys_id,
             "question": user_message
         }  # Prepare JSON payload
 
@@ -30,7 +29,7 @@ class MyBot(ActivityHandler):
                         response_text = await response.text()
                         try:
                             api_response = json.loads(response_text)  # Manually parse JSON from string
-                            content = api_response.get("content", "No content available")  # Extract 'content' field
+                            content = api_response.get("answer", "No content available")  # Extract 'content' field
                         except json.JSONDecodeError:
                             content = "Failed to parse JSON response"
 
@@ -39,6 +38,7 @@ class MyBot(ActivityHandler):
                         await turn_context.send_activity(f"API Error: {response.status}")
         except Exception as e:
             await turn_context.send_activity(f"Error calling API: {str(e)}")
+        # await turn_context.send_activity(f"{user_message}")
 
 
     async def on_members_added_activity(
