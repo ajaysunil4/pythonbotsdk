@@ -1,10 +1,6 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
-
 import sys
 import traceback
 from datetime import datetime
-
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 from botbuilder.core import (
@@ -14,7 +10,6 @@ from botbuilder.core import (
 )
 from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
-
 from bot import MyBot
 from config import DefaultConfig
 
@@ -22,7 +17,7 @@ CONFIG = DefaultConfig()
 
 # Create adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
-SETTINGS = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD,'3a7dd6e2-0a63-4ec5-bac5-e702961f4ab9')
+SETTINGS = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD, CONFIG.TENANT_ID)
 ADAPTER = BotFrameworkAdapter(SETTINGS)
 
 
