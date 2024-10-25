@@ -9,10 +9,9 @@ import json
 class MyBot(ActivityHandler):
     async def on_message_activity(self, turn_context: TurnContext):
         user_message = turn_context.activity.text  # Get the user's message
-        sys_id = "6dbf66761b6f7510acf9c9541a4bcb3e"  # The sys_id for the API
 
         # Call the external API
-        api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/messages?code=xjQnL2hYS78iWva_QrpUk3plEg_S84CwaNS6YZNIqJY1AzFu8ROTkg=="
+        api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=NnyNuO8GadcPLJYH1vTJL_-dut_c-aVULyDSR-VpChmzAzFu83I-pA=="
         payload = {
             "question": user_message
         }  # Prepare JSON payload
@@ -39,13 +38,3 @@ class MyBot(ActivityHandler):
         except Exception as e:
             await turn_context.send_activity(f"Error calling API: {str(e)}")
         # await turn_context.send_activity(f"{user_message}")
-
-
-    async def on_members_added_activity(
-        self,
-        members_added: ChannelAccount,
-        turn_context: TurnContext
-    ):
-        for member_added in members_added:
-            if member_added.id != turn_context.activity.recipient.id:
-                await turn_context.send_activity("")
