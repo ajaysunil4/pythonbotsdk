@@ -16,7 +16,6 @@ from config import DefaultConfig
 CONFIG = DefaultConfig()
 
 # Create adapter.
-# See https://aka.ms/about-bot-adapter to learn more about how bots work.
 SETTINGS = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD, CONFIG.TENANT_ID)
 ADAPTER = BotFrameworkAdapter(SETTINGS)
 
@@ -60,16 +59,31 @@ async def messages(req: Request) -> Response:
     # Main bot message handler.
     if "application/json" in req.headers["Content-Type"]:
         body = await req.json()
+        print("Request body: ", body)
     else:
         return Response(status=415)
 
     activity = Activity().deserialize(body)
     auth_header = req.headers["Authorization"] if "Authorization" in req.headers else ""
+    # auth_header = req.headers.get("Authorization")
+    # if not auth_header:
+    #     print("Error: Authorization header is missing.")
+    #     return Response(status=401)
+    
+    # if not auth_header.startswith("Bearer "):
+    #     print("Error: Invalid authorization header format.")
+    #     return Response(status=401)
 
-    response = await ADAPTER.process_activity(activity, auth_header, BOT.on_turn)
-    if response:
-        return json_response(data=response.body, status=response.status)
-    return Response(status=201)
+    # token = auth_header.split(" ")[1]
+    
+    try:
+        response = await ADAPTER.process_activity(activity, auth_header, BOT.on_turn)
+        if response:
+            return json_response(data=response.body, status=response.status)
+        return Response(status=201)
+    except Exception as e:
+        print(f"Error processing activity: {e}")
+        return Response(status=500)
 
 
 APP = web.Application(middlewares=[aiohttp_error_middleware])

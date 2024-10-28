@@ -11,7 +11,7 @@ class MyBot(ActivityHandler):
         user_message = turn_context.activity.text  # Get the user's message
 
         # Call the external API
-        api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=NnyNuO8GadcPLJYH1vTJL_-dut_c-aVULyDSR-VpChmzAzFu83I-pA=="
+        api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
         payload = {
             "question": user_message
         }  # Prepare JSON payload
