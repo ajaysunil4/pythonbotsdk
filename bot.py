@@ -50,14 +50,14 @@ class MyBot(ActivityHandler):
 
                             print("Citations received from API:", citations)
 
+                            # Include citations only if they are available
                             if isinstance(citations, list) and citations:
-                                formatted_citations = "\n".join(
+                                formatted_citations = "\n\n**Citations:**\n" + "\n".join(
                                     [f"- {cite}" for cite in citations]
                                 )
+                                message_content = f"{answer}{formatted_citations}"
                             else:
-                                formatted_citations = "No citations available"
-
-                            message_content = f"{answer}\n\n\n**Citations:**\n{formatted_citations}"
+                                message_content = answer
 
                         except json.JSONDecodeError:
                             message_content = "Failed to parse JSON response"
