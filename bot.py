@@ -25,7 +25,7 @@ class MyBot(ActivityHandler):
             await turn_context.send_activity(f"Could not retrieve user info: {str(e)}")
             return
 
-        # Define the API endpoint and payload
+        # Define the API endpoint and payload 
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
         payload = {
             "question": user_message,
