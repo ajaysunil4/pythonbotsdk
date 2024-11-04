@@ -3,19 +3,15 @@ from botbuilder.core.teams.teams_info import TeamsInfo
 import uuid
 import aiohttp
 import json
+import datetime
 
 class MyBot(ActivityHandler):
     def __init__(self, conversation_state: ConversationState):
         self.conversation_state = conversation_state
-        self.session_id = None
+        self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
         user_message = turn_context.activity.text
-
-        if not self.session_id:
-            self.session_id = str(uuid.uuid4())
-        print("Session ID: ", self.session_id)
-
         try:
             user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
             username = user_profile.name
@@ -24,12 +20,23 @@ class MyBot(ActivityHandler):
             # Handle any exceptions if user profile fetch fails
             await turn_context.send_activity(f"Could not retrieve user info: {str(e)}")
             return
+        if email not in self.sessions.keys():
+            self.sessions[email] = {}
+            self.sessions[email]['id'] = str(uuid.uuid4())
+        else:
+            timediff = datetime.datetime.now() - self.sessions[email]['last_query_time']
+            if timediff.seconds > 300:
+                self.sessions[email]['id'] = str(uuid.uuid4())
+        self.sessions[email]['last_query_time'] = datetime.datetime.now()
+        print("Session ID: ", self.sessions[email])
+
+       
 
         # Define the API endpoint and payload 
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
         payload = {
             "question": user_message,
-            "session_id": self.session_id,
+            "session_id": self.sessions[email]['id'],
             "username": username,
             "email": email
         }
