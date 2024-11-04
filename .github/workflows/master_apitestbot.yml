@@ -66,4 +66,4 @@ jobs:
         with:
           app-name: 'apitestbot'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_53AFA2D4A5304F629AA72191C8394025 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_28E2FAE9C2F94513B5165079CFE1EA13 }}
