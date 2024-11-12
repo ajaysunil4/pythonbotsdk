@@ -22,15 +22,6 @@ class MyBot(ActivityHandler):
                 await turn_context.send_activity("Thank you for the feedback. We'll work to improve. 👎")
             return
 
-        # Step 2: Process user's initial message if no feedback data
-        user_message = turn_context.activity.text
-        response_text = message_content
-        await self.send_response_with_feedback(turn_context, response_text)
-
-        # Save changes to conversation state
-        await self.conversation_state.save_changes(turn_context)
-
-            
         user_message = turn_context.activity.text
         try:
             user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
@@ -76,7 +67,6 @@ class MyBot(ActivityHandler):
 
                             print("Citations received from API:", citations)
 
-                            # Include citations only if they are available
                             if isinstance(citations, list) and citations:
                                 formatted_citations = "\n\n**Citations:**\n" + "\n".join(
                                     [f"- {cite}" for cite in citations]
@@ -97,41 +87,14 @@ class MyBot(ActivityHandler):
         await self.conversation_state.save_changes(turn_context)
         
     async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str):
-        # Define the Adaptive Card with the response and Like/Dislike buttons
         feedback_card = {
             "type": "AdaptiveCard",
-            "body": [
-                {
-                    "type": "TextBlock",
-                    "text": response_text,
-                    "wrap": True
-                }
-            ],
-            "actions": [
-                {
-                    "type": "Action.Submit",
-                    "title": "👍",
-                    "data": { "feedback": "like", "original_text": response_text }
-                },
-                {
-                    "type": "Action.Submit",
-                    "title": "👎",
-                    "data": { "feedback": "dislike", "original_text": response_text }
-                }
-            ],
+            "body": [{"type": "TextBlock","text": response_text,"wrap": True}],
+            "actions": [{"type": "Action.Submit","title": "👍","data": { "feedback": "like", "original_text": response_text }},
+                        {"type": "Action.Submit","title": "👎","data": { "feedback": "dislike", "original_text": response_text }}],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
         }
 
-        adaptive_card_attachment = Attachment(
-            content_type="application/vnd.microsoft.card.adaptive",
-            content=feedback_card
-        )
-
-        # Send the Adaptive Card as an activity
-        await turn_context.send_activity(
-            Activity(
-                type=ActivityTypes.message,
-                attachments=[adaptive_card_attachment]
-            )
-        )
+        adaptive_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive",content=feedback_card)
+        await turn_context.send_activity(Activity(type=ActivityTypes.message,attachments=[adaptive_card_attachment]))
