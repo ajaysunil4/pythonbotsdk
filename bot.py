@@ -1,4 +1,5 @@
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState
+from botbuilder.schema import Attachment, Activity, ActivityTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
 import uuid
 import aiohttp
@@ -11,13 +12,21 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
+        # Check if this activity contains feedback data
+        if turn_context.activity.value and "feedback" in turn_context.activity.value:
+            feedback = turn_context.activity.value["feedback"]
+            if feedback == "like":
+                await turn_context.send_activity("Thank you for your feedback! 👍")
+            elif feedback == "dislike":
+                await turn_context.send_activity("Thank you for the feedback. We'll work to improve. 👎")
+            return
+        
         user_message = turn_context.activity.text
         try:
             user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
             username = user_profile.name
             email = user_profile.email
         except Exception as e:
-            # Handle any exceptions if user profile fetch fails
             await turn_context.send_activity(f"Could not retrieve user info: {str(e)}")
             return
         if email not in self.sessions.keys():
@@ -69,9 +78,53 @@ class MyBot(ActivityHandler):
                         except json.JSONDecodeError:
                             message_content = "Failed to parse JSON response"
                         await turn_context.send_activity(message_content)
+                        # Step 3: Send the feedback card after sending the answer
+                        await self.send_feedback_card(turn_context)
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
         
         except Exception as e:
             await turn_context.send_activity(f"Error calling API: {str(e)}")
         await self.conversation_state.save_changes(turn_context)
+        
+    # Method to send feedback card
+    async def send_feedback_card(self, turn_context: TurnContext):
+        # Adaptive card with Like and Dislike buttons
+        feedback_card = {
+            "type": "AdaptiveCard",
+            "body": [
+                {
+                    "type": "TextBlock",
+                    "text": "Did you find this answer helpful?",
+                    "wrap": True,
+                    "weight": "Bolder"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "👍",
+                    "data": { "feedback": "like" }
+                },
+                {
+                    "type": "Action.Submit",
+                    "title": "👎",
+                    "data": { "feedback": "dislike" }
+                }
+            ],
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.2"
+        }
+
+        adaptive_card_attachment = Attachment(
+            content_type="application/vnd.microsoft.card.adaptive",
+            content=feedback_card
+        )
+
+        # Send the Adaptive Card as an activity
+        await turn_context.send_activity(
+            Activity(
+                type=ActivityTypes.message,
+                attachments=[adaptive_card_attachment]
+            )
+        )
