@@ -21,8 +21,6 @@ class MyBot(ActivityHandler):
                 await turn_context.send_activity("Thank you for your feedback! 👍")
             elif feedback == "dislike":
                 await turn_context.send_activity("Thank you for the feedback. We'll work to improve. 👎")
-
-            await turn_context.send_activity(original_text)
             return
         
         user_message = turn_context.activity.text
@@ -81,8 +79,7 @@ class MyBot(ActivityHandler):
 
                         except json.JSONDecodeError:
                             message_content = "Failed to parse JSON response"
-                        await turn_context.send_activity(message_content)
-                    # Step 4: Send the response with feedback buttons using the correct method
+                        # await turn_context.send_activity(message_content)
                         await self.send_response_with_feedback(turn_context, message_content)
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
@@ -91,18 +88,25 @@ class MyBot(ActivityHandler):
             await turn_context.send_activity(f"Error calling API: {str(e)}")
         await self.conversation_state.save_changes(turn_context)
         
-    async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str):
-        # Define the Adaptive Card with the response text and Like/Dislike buttons on the right
+    async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, show_feedback_buttons=True):
+        # Adaptive Card with conditional feedback buttons
         feedback_card = {
             "type": "AdaptiveCard",
             "body": [
                 {
                     "type": "TextBlock",
                     "text": response_text,
-                    "wrap": True
+                    "wrap": True,
+                    "horizontalAlignment": "Right"
                 }
             ],
-            "actions": [
+            "actions": [],
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.2"
+        }
+
+        if show_feedback_buttons:
+            feedback_card["actions"] = [
                 {
                     "type": "Action.Submit",
                     "title": "👍",
@@ -113,10 +117,14 @@ class MyBot(ActivityHandler):
                     "title": "👎",
                     "data": { "feedback": "dislike", "original_text": response_text }
                 }
-            ],
-            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-            "version": "1.2"
-        }
+            ]
+        else:
+            feedback_card["body"].append({
+                "type": "TextBlock",
+                "text": "Thank you for your feedback!",
+                "wrap": True,
+                "horizontalAlignment": "Right"
+            })
 
         adaptive_card_attachment = Attachment(
             content_type="application/vnd.microsoft.card.adaptive",
