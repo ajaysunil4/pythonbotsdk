@@ -12,17 +12,15 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
-        if turn_context.activity.value:
-            if "feedback" in turn_context.activity.value:
-                feedback_type = turn_context.activity.value["feedback"]
-                await self.send_feedback_popup(turn_context, feedback_type)
-                return  # Exit to avoid further processing
-            elif "action" in turn_context.activity.value and turn_context.activity.value["action"] == "submit_feedback":
-                feedback_type = turn_context.activity.value["feedback_type"]
-                feedback_details = turn_context.activity.value.get("feedback_details", [])
-                feedback_response = ", ".join(feedback_details)
-                await turn_context.send_activity(f"Thank you for your feedback on '{feedback_type}'. Details: {feedback_response}")
-                return  # Exit to avoid further processing
+        if turn_context.activity.value and "feedback" in turn_context.activity.value:
+            feedback = turn_context.activity.value["feedback"]
+            # original_text = turn_context.activity.value["original_text"]
+
+            if feedback == "like":
+                await turn_context.send_activity("Thank you for your feedback! 👍")
+            elif feedback == "dislike":
+                await turn_context.send_activity("Thank you for the feedback. We'll work to improve. 👎")
+            return
 
         # Step 2: Process user's initial message if no feedback data
         user_message = turn_context.activity.text
@@ -98,42 +96,42 @@ class MyBot(ActivityHandler):
             await turn_context.send_activity(f"Error calling API: {str(e)}")
         await self.conversation_state.save_changes(turn_context)
         
-    async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, show_feedback_buttons=True):
+    async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str):
+        # Define the Adaptive Card with the response and Like/Dislike buttons
         feedback_card = {
             "type": "AdaptiveCard",
-            "body": [{"type": "TextBlock", "text": response_text, "wrap": True}],
-            "actions": [],
-            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-            "version": "1.2"
-        }
-
-        if show_feedback_buttons:
-            feedback_card["actions"] = [
-                {"type": "Action.Submit", "title": "👍", "data": {"feedback": "like"}},
-                {"type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike"}}
-            ]
-
-        adaptive_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive", content=feedback_card)
-        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[adaptive_card_attachment]))
-
-    async def send_feedback_popup(self, turn_context: TurnContext, feedback_type: str):
-        feedback_options = {"like": ["Helpful", "Clear", "Relevant"], "dislike": ["Not relevant", "Hard to understand", "Inaccurate"]}
-        popup_card = {
-            "type": "AdaptiveCard",
             "body": [
-                {"type": "TextBlock", "text": f"Why did you choose to {feedback_type}?", "wrap": True, "weight": "Bolder"},
                 {
-                    "type": "Input.ChoiceSet",
-                    "id": "feedback_details",
-                    "style": "expanded",
-                    "isMultiSelect": True,
-                    "choices": [{"title": option, "value": option} for option in feedback_options[feedback_type]]
+                    "type": "TextBlock",
+                    "text": response_text,
+                    "wrap": True
                 }
             ],
-            "actions": [{"type": "Action.Submit", "title": "Submit Feedback", "data": {"action": "submit_feedback", "feedback_type": feedback_type}}],
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "👍",
+                    "data": { "feedback": "like", "original_text": response_text }
+                },
+                {
+                    "type": "Action.Submit",
+                    "title": "👎",
+                    "data": { "feedback": "dislike", "original_text": response_text }
+                }
+            ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
         }
 
-        adaptive_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive", content=popup_card)
-        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[adaptive_card_attachment]))
+        adaptive_card_attachment = Attachment(
+            content_type="application/vnd.microsoft.card.adaptive",
+            content=feedback_card
+        )
+
+        # Send the Adaptive Card as an activity
+        await turn_context.send_activity(
+            Activity(
+                type=ActivityTypes.message,
+                attachments=[adaptive_card_attachment]
+            )
+        )
