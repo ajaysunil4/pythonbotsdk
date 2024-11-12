@@ -33,7 +33,7 @@ class MyBot(ActivityHandler):
                                 "type": "TextBlock",
                                 "text": "Submit Feedback",
                                 "weight": "bolder",
-                                "size": "medium",
+                                "size": "large",
                                 "wrap": True
                             },
                             # Subheading
@@ -101,8 +101,14 @@ class MyBot(ActivityHandler):
                     return
 
             elif "feedback_type" in data:
-                feedback_type = data["feedback_type"]
+                feedback_type = data.get("feedback_type")
+                original_text = data.get("original_text", "")  # Handle missing original_text gracefully
                 feedback_details = self.collect_feedback_details(data, feedback_type)
+
+                # If the user hasn't selected anything, return an error message
+                if not feedback_details and feedback_type == "negative":
+                    await turn_context.send_activity("You haven't provided any feedback. Please select at least one option.")
+                    return
 
                 # Generate final feedback message
                 final_message = self.finalize_feedback(feedback_type, feedback_details)
