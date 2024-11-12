@@ -12,22 +12,14 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
-        # Step 1: Check if the activity contains feedback data
         if turn_context.activity.value:
-            # Case: User clicked Like or Dislike
             if "feedback" in turn_context.activity.value:
                 feedback_type = turn_context.activity.value["feedback"]
-
-                # Send feedback popup with checkboxes based on Like or Dislike
                 await self.send_feedback_popup(turn_context, feedback_type)
                 return  # Exit to avoid further processing
-                
-            # Case: User submitted feedback from the popup
             elif "action" in turn_context.activity.value and turn_context.activity.value["action"] == "submit_feedback":
                 feedback_type = turn_context.activity.value["feedback_type"]
                 feedback_details = turn_context.activity.value.get("feedback_details", [])
-
-                # Save or process feedback details here
                 feedback_response = ", ".join(feedback_details)
                 await turn_context.send_activity(f"Thank you for your feedback on '{feedback_type}'. Details: {feedback_response}")
                 return  # Exit to avoid further processing
@@ -107,16 +99,9 @@ class MyBot(ActivityHandler):
         await self.conversation_state.save_changes(turn_context)
         
     async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, show_feedback_buttons=True):
-        # Adaptive Card with conditional feedback buttons
         feedback_card = {
             "type": "AdaptiveCard",
-            "body": [
-                {
-                    "type": "TextBlock",
-                    "text": response_text,
-                    "wrap": True,
-                }
-            ],
+            "body": [{"type": "TextBlock", "text": response_text, "wrap": True}],
             "actions": [],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
@@ -124,54 +109,19 @@ class MyBot(ActivityHandler):
 
         if show_feedback_buttons:
             feedback_card["actions"] = [
-                {
-                    "type": "Action.Submit",
-                    "title": "👍",
-                    "data": { "feedback": "like", "original_text": response_text }
-                },
-                {
-                    "type": "Action.Submit",
-                    "title": "👎",
-                    "data": { "feedback": "dislike", "original_text": response_text }
-                }
+                {"type": "Action.Submit", "title": "👍", "data": {"feedback": "like"}},
+                {"type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike"}}
             ]
-        else:
-            feedback_card["body"].append({
-                "type": "TextBlock",
-                "text": "Thank you for your feedback!",
-                "wrap": True,
-                "horizontalAlignment": "Right"
-            })
 
-        adaptive_card_attachment = Attachment(
-            content_type="application/vnd.microsoft.card.adaptive",
-            content=feedback_card
-        )
-
-        # Send the Adaptive Card as an activity
-        await turn_context.send_activity(
-            Activity(
-                type=ActivityTypes.message,
-                attachments=[adaptive_card_attachment]
-            )
-        )
+        adaptive_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive", content=feedback_card)
+        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[adaptive_card_attachment]))
 
     async def send_feedback_popup(self, turn_context: TurnContext, feedback_type: str):
-        # Define feedback options based on Like or Dislike
-        feedback_options = {
-            "like": ["Helpful", "Clear", "Relevant"],
-            "dislike": ["Not relevant", "Hard to understand", "Inaccurate"]
-        }
-
+        feedback_options = {"like": ["Helpful", "Clear", "Relevant"], "dislike": ["Not relevant", "Hard to understand", "Inaccurate"]}
         popup_card = {
             "type": "AdaptiveCard",
             "body": [
-                {
-                    "type": "TextBlock",
-                    "text": f"Please tell us why you chose to {feedback_type} this response:",
-                    "wrap": True,
-                    "weight": "Bolder"
-                },
+                {"type": "TextBlock", "text": f"Why did you choose to {feedback_type}?", "wrap": True, "weight": "Bolder"},
                 {
                     "type": "Input.ChoiceSet",
                     "id": "feedback_details",
@@ -180,29 +130,10 @@ class MyBot(ActivityHandler):
                     "choices": [{"title": option, "value": option} for option in feedback_options[feedback_type]]
                 }
             ],
-            "actions": [
-                {
-                    "type": "Action.Submit",
-                    "title": "Submit Feedback",
-                    "data": {
-                        "action": "submit_feedback",
-                        "feedback_type": feedback_type
-                    }
-                }
-            ],
+            "actions": [{"type": "Action.Submit", "title": "Submit Feedback", "data": {"action": "submit_feedback", "feedback_type": feedback_type}}],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
         }
 
-        adaptive_card_attachment = Attachment(
-            content_type="application/vnd.microsoft.card.adaptive",
-            content=popup_card
-        )
-
-        # Send the popup Adaptive Card as an activity
-        await turn_context.send_activity(
-            Activity(
-                type=ActivityTypes.message,
-                attachments=[adaptive_card_attachment]
-            )
-        )
+        adaptive_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive", content=popup_card)
+        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[adaptive_card_attachment]))
