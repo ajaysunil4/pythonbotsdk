@@ -12,9 +12,11 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
-        # Check if this activity contains feedback data
         if turn_context.activity.value and "feedback" in turn_context.activity.value:
             feedback = turn_context.activity.value["feedback"]
+            # original_text = turn_context.activity.value["original_text"]
+
+            # Acknowledge the feedback
             if feedback == "like":
                 await turn_context.send_activity("Thank you for your feedback! 👍")
             elif feedback == "dislike":
@@ -88,14 +90,14 @@ class MyBot(ActivityHandler):
         await self.conversation_state.save_changes(turn_context)
         
     # Method to send feedback card
-    async def send_feedback_card(self, turn_context: TurnContext):
+    async def send_feedback_card(self, turn_context: TurnContext, response_text: str):
         # Adaptive card with Like and Dislike buttons
         feedback_card = {
             "type": "AdaptiveCard",
             "body": [
                 {
                     "type": "TextBlock",
-                    "text": "Did you find this answer helpful?",
+                    "text": response_text,
                     "wrap": True,
                     "weight": "Bolder"
                 }
