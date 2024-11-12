@@ -12,35 +12,35 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
-        # Check if feedback data is present in the activity
-        if turn_context.activity.value and "feedback" in turn_context.activity.value:
-            feedback = turn_context.activity.value["feedback"]
-            original_text = turn_context.activity.value["original_text"]
-            user_id = turn_context.activity.from_property.id
+        # Step 1: Check if the activity contains feedback data
+        if turn_context.activity.value:
+            # Case: User clicked Like or Dislike
+            if "feedback" in turn_context.activity.value:
+                feedback_type = turn_context.activity.value["feedback"]
 
-            # Store feedback status in session
-            self.sessions[user_id] = {"feedback_given": True}
+                # Send feedback popup with checkboxes based on Like or Dislike
+                await self.send_feedback_popup(turn_context, feedback_type)
+                return  # Exit to avoid further processing
+                
+            # Case: User submitted feedback from the popup
+            elif "action" in turn_context.activity.value and turn_context.activity.value["action"] == "submit_feedback":
+                feedback_type = turn_context.activity.value["feedback_type"]
+                feedback_details = turn_context.activity.value.get("feedback_details", [])
 
-            # Update the message to remove buttons and show "Thank you" message
-            await self.send_response_with_feedback(turn_context, original_text, show_feedback_buttons=False)
-            return  # Exit to avoid further processing
+                # Save or process feedback details here
+                feedback_response = ", ".join(feedback_details)
+                await turn_context.send_activity(f"Thank you for your feedback on '{feedback_type}'. Details: {feedback_response}")
+                return  # Exit to avoid further processing
 
-        # Process user message as normal
+        # Step 2: Process user's initial message if no feedback data
         user_message = turn_context.activity.text
-        user_id = turn_context.activity.from_property.id
+        response_text = message_content
+        await self.send_response_with_feedback(turn_context, response_text)
 
-        # Check if feedback has been given already for this session
-        if user_id not in self.sessions:
-            self.sessions[user_id] = {"feedback_given": False}
-        
-        show_feedback_buttons = not self.sessions[user_id]["feedback_given"]
+        # Save changes to conversation state
+        await self.conversation_state.save_changes(turn_context)
 
-        # Example response text
-        response_text = original_text
-
-        # Send the response with feedback buttons or "Thank you" message if feedback was given
-        await self.send_response_with_feedback(turn_context, response_text, show_feedback_buttons)
-        
+            
         user_message = turn_context.activity.text
         try:
             user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
@@ -98,7 +98,7 @@ class MyBot(ActivityHandler):
                         except json.JSONDecodeError:
                             message_content = "Failed to parse JSON response"
                         # await turn_context.send_activity(message_content)
-                        await self.send_response_with_feedback(turn_context, message_content, show_feedback_buttons)
+                        await self.send_response_with_feedback(turn_context, message_content)
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
         
@@ -107,58 +107,36 @@ class MyBot(ActivityHandler):
         await self.conversation_state.save_changes(turn_context)
         
     async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, show_feedback_buttons=True):
-        # Define an Adaptive Card with a ColumnSet for text and buttons
+        # Adaptive Card with conditional feedback buttons
         feedback_card = {
             "type": "AdaptiveCard",
             "body": [
                 {
-                    "type": "ColumnSet",
-                    "columns": [
-                        {
-                            "type": "Column",
-                            "width": "stretch",
-                            "items": [
-                                {
-                                    "type": "TextBlock",
-                                    "text": response_text,
-                                    "wrap": True
-                                }
-                            ]
-                        },
-                        {
-                            "type": "Column",
-                            "width": "auto",
-                            "items": []
-                        }
-                    ]
+                    "type": "TextBlock",
+                    "text": response_text,
+                    "wrap": True,
                 }
             ],
+            "actions": [],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
         }
 
-        # Add feedback buttons in the right column if feedback hasn't been given
         if show_feedback_buttons:
-            feedback_card["body"][0]["columns"][1]["items"] = [
+            feedback_card["actions"] = [
                 {
-                    "type": "ActionSet",
-                    "actions": [
-                        {
-                            "type": "Action.Submit",
-                            "title": "👍",
-                            "data": { "feedback": "like", "original_text": response_text }
-                        },
-                        {
-                            "type": "Action.Submit",
-                            "title": "👎",
-                            "data": { "feedback": "dislike", "original_text": response_text }
-                        }
-                    ]
+                    "type": "Action.Submit",
+                    "title": "👍",
+                    "data": { "feedback": "like", "original_text": response_text }
+                },
+                {
+                    "type": "Action.Submit",
+                    "title": "👎",
+                    "data": { "feedback": "dislike", "original_text": response_text }
                 }
             ]
         else:
-            # Show "Thank you" message in place of the buttons
-            feedback_card["body"][0]["columns"][1]["items"].append({
+            feedback_card["body"].append({
                 "type": "TextBlock",
                 "text": "Thank you for your feedback!",
                 "wrap": True,
@@ -171,6 +149,57 @@ class MyBot(ActivityHandler):
         )
 
         # Send the Adaptive Card as an activity
+        await turn_context.send_activity(
+            Activity(
+                type=ActivityTypes.message,
+                attachments=[adaptive_card_attachment]
+            )
+        )
+
+    async def send_feedback_popup(self, turn_context: TurnContext, feedback_type: str):
+        # Define feedback options based on Like or Dislike
+        feedback_options = {
+            "like": ["Helpful", "Clear", "Relevant"],
+            "dislike": ["Not relevant", "Hard to understand", "Inaccurate"]
+        }
+
+        popup_card = {
+            "type": "AdaptiveCard",
+            "body": [
+                {
+                    "type": "TextBlock",
+                    "text": f"Please tell us why you chose to {feedback_type} this response:",
+                    "wrap": True,
+                    "weight": "Bolder"
+                },
+                {
+                    "type": "Input.ChoiceSet",
+                    "id": "feedback_details",
+                    "style": "expanded",
+                    "isMultiSelect": True,
+                    "choices": [{"title": option, "value": option} for option in feedback_options[feedback_type]]
+                }
+            ],
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "Submit Feedback",
+                    "data": {
+                        "action": "submit_feedback",
+                        "feedback_type": feedback_type
+                    }
+                }
+            ],
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.2"
+        }
+
+        adaptive_card_attachment = Attachment(
+            content_type="application/vnd.microsoft.card.adaptive",
+            content=popup_card
+        )
+
+        # Send the popup Adaptive Card as an activity
         await turn_context.send_activity(
             Activity(
                 type=ActivityTypes.message,
