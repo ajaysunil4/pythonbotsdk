@@ -12,14 +12,118 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
-        if turn_context.activity.value and "feedback" in turn_context.activity.value:
-            feedback = turn_context.activity.value["feedback"]
-            # original_text = turn_context.activity.value["original_text"]
+        if turn_context.activity.value:
+            data = turn_context.activity.value
+            if "feedback" in data:
+                feedback = data["feedback"]
+                original_text = data["original_text"]
+                
+                # Define follow-up card based on Like/Dislike selection
+                if feedback == "like":
+                    follow_up_card = {
+                        "type": "AdaptiveCard",
+                        "body": [
+                            {
+                                "type": "TextBlock",
+                                "text": "Thank you! Can you tell us what you found helpful?",
+                                "wrap": True
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Helpful",
+                                "id": "helpful_feedback"
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Clear Explanation",
+                                "id": "clear_feedback"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "type": "Action.Submit",
+                                "title": "Submit",
+                                "data": {
+                                    "feedback_type": "positive",
+                                    "original_text": original_text
+                                }
+                            }
+                        ],
+                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "version": "1.2"
+                    }
+                elif feedback == "dislike":
+                    follow_up_card = {
+                        "type": "AdaptiveCard",
+                        "body": [
+                            {
+                                "type": "TextBlock",
+                                "text": "Sorry to hear that. What was the issue?",
+                                "wrap": True
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Confusing",
+                                "id": "confusing_feedback"
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Not Helpful",
+                                "id": "not_helpful_feedback"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "type": "Action.Submit",
+                                "title": "Submit",
+                                "data": {
+                                    "feedback_type": "negative",
+                                    "original_text": original_text
+                                }
+                            }
+                        ],
+                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "version": "1.2"
+                    }
+                
+                # Send the follow-up feedback card
+                follow_up_card_attachment = Attachment(
+                    content_type="application/vnd.microsoft.card.adaptive",
+                    content=follow_up_card
+                )
+                await turn_context.send_activity(
+                    Activity(
+                        type=ActivityTypes.message,
+                        attachments=[follow_up_card_attachment]
+                    )
+                )
+                return
 
-            if feedback == "like":
-                await turn_context.send_activity("Thank you for your feedback! 👍")
-            elif feedback == "dislike":
-                await turn_context.send_activity("Thank you for the feedback. We'll work to improve. 👎")
+        # Handle feedback submission from the follow-up card
+        elif "feedback_type" in data:
+            feedback_type = data["feedback_type"]
+            feedback_details = []
+            
+            if feedback_type == "positive":
+                if data.get("helpful_feedback"):
+                    feedback_details.append("Helpful")
+                if data.get("clear_feedback"):
+                    feedback_details.append("Clear Explanation")
+                
+                feedback_message = "Thank you for your positive feedback!"
+            
+            elif feedback_type == "negative":
+                if data.get("confusing_feedback"):
+                    feedback_details.append("Confusing")
+                if data.get("not_helpful_feedback"):
+                    feedback_details.append("Not Helpful")
+                
+                feedback_message = "Thank you for helping us improve!"
+
+            # Show final confirmation message with selected feedback details
+            await turn_context.send_activity(
+                f"{feedback_message} Your feedback: {', '.join(feedback_details)}"
+            )
             return
 
         user_message = turn_context.activity.text
