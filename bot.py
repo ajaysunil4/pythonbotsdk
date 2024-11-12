@@ -193,8 +193,7 @@ class MyBot(ActivityHandler):
                     "type": "TextBlock",
                     "text": "How do you feel about this response?",
                     "wrap": True,
-                    "separator": True,
-                    "horizontalAlignment": "Right"
+                    "separator": True
                 }
             ],
             "actions": [
@@ -204,7 +203,8 @@ class MyBot(ActivityHandler):
                     "data": {
                         "feedback": "like",
                         "original_text": response_text
-                    }
+                    },
+                    "horizontalAlignment": "Right"
                 },
                 {
                     "type": "Action.Submit",
@@ -212,7 +212,8 @@ class MyBot(ActivityHandler):
                     "data": {
                         "feedback": "dislike",
                         "original_text": response_text
-                    }
+                    },
+                    "horizontalAlignment": "Right"
                 }
             ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
