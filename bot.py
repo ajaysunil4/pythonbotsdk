@@ -12,123 +12,105 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
-        # Check if feedback is in the message activity
-        data = turn_context.activity.value or {}
         
-        if "feedback" in data:
-            feedback = data["feedback"]
-            original_text = data["original_text"]
-            
-            # Create and send the follow-up feedback card based on feedback type
-            follow_up_card = self.create_feedback_card(feedback, original_text)
+        if turn_context.activity.value:
+            data = turn_context.activity.value
+            if "feedback" in data:
+                feedback = data["feedback"]
+                original_text = data["original_text"]
+                
+                if feedback == "like":
+                    feedback_message = "Thank you for your positive feedback!"
+                    
+                    await turn_context.send_activity(feedback_message)
+                    return
 
-            follow_up_card_attachment = Attachment(
-                content_type="application/vnd.microsoft.card.adaptive",
-                content=follow_up_card
-            )
-            await turn_context.send_activity(
-                Activity(
-                    type=ActivityTypes.message,
-                    attachments=[follow_up_card_attachment]
-                )
-            )
-            return
-
-        # Handle feedback submission from the follow-up card
-        if "feedback_type" in data:
-            feedback_type = data["feedback_type"]
-            feedback_details = self.collect_feedback_details(data, feedback_type)
-            feedback_message = self.finalize_feedback(feedback_type, feedback_details)
-
-            # Show final confirmation message with selected feedback details
-            await turn_context.send_activity(feedback_message)
-            return
-
-        # Handle user query
-        await self.handle_user_query(turn_context)
-
-    def create_feedback_card(self, feedback, original_text):
-        """Create an adaptive card based on the feedback type."""
-        if feedback == "like":
-            return 
-        elif feedback == "dislike":
-            return {
-                "type": "AdaptiveCard",
-                "body": [
-                    {
-                        "type": "TextBlock",
-                        "text": "Sorry to hear that. What was the issue?",
-                        "wrap": True
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "title": "Citations are missing",
-                        "id": "citation_miss"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "title": "Citations are wrong",
-                        "id": "citation_wrong"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "title": "Response is not from my data",
-                        "id": "false_response"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "title": "Inaccurate or irrelevant",
-                        "id": "inacc_or_irrel"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "title": "Others",
-                        "id": "others"
+                elif feedback == "dislike":
+                    follow_up_card = {
+                        "type": "AdaptiveCard",
+                        "body": [
+                            {
+                                "type": "TextBlock",
+                                "text": "Submit Feedback",
+                                "weight": "bolder",
+                                "size": "medium",
+                                "wrap": True
+                            },
+                            # Subheading
+                            {
+                                "type": "TextBlock",
+                                "text": "Your feedback will improve this experience.",
+                                "isSubtle": True,
+                                "wrap": True
+                            },
+                            {
+                                "type": "TextBlock",
+                                "text": "Why wasn't the response helpful?",
+                                "wrap": True
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Citations are missing",
+                                "id": "citation_miss"
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Citations are wrong",
+                                "id": "citation_wrong"
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Response is not from my data",
+                                "id": "false_response"
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Inaccurate or irrelevant",
+                                "id": "inacc_or_irrel"
+                            },
+                            {
+                                "type": "Input.Toggle",
+                                "title": "Others",
+                                "id": "others"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "type": "Action.Submit",
+                                "title": "Submit",
+                                "data": {
+                                    "feedback_type": "negative",
+                                    "original_text": original_text
+                                }
+                            }
+                        ],
+                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "version": "1.2"
                     }
-                ],
-                "actions": [
-                    {
-                        "type": "Action.Submit",
-                        "title": "Submit",
-                        "data": {
-                            "feedback_type": "negative",
-                            "original_text": original_text
-                        }
-                    }
-                ],
-                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                "version": "1.2"
-            }
-    
-    def collect_feedback_details(self, data, feedback_type):
-        """Collect feedback details based on the feedback type (positive or negative)."""
-        feedback_details = []
-        if feedback_type == "positive":
-            return
-        elif feedback_type == "negative":
-            if data.get("citation_miss"):
-                feedback_details.append("Citations are missing")
-            if data.get("citation_wrong"):
-                feedback_details.append("Citations are wrong")
-            if data.get("false_response"):
-                feedback_details.append("Response is not from my data")
-            if data.get("inacc_or_irrel"):
-                feedback_details.append("Inaccurate or irrelevant")
-            if data.get("others"):
-                feedback_details.append("Others")
-        return feedback_details
 
-    def finalize_feedback(self, feedback_type, feedback_details):
-        """Finalize the feedback message based on feedback details."""
-        if feedback_type == "positive":
-            feedback_message = "Thank you for your positive feedback!"
-            return f"{feedback_message}"
-        elif feedback_type == "negative":
-            feedback_message = "Thank you for helping us improve!"
-            return f"{feedback_message} Your feedback: {', '.join(feedback_details)}"
+                    follow_up_card_attachment = Attachment(
+                        content_type="application/vnd.microsoft.card.adaptive",
+                        content=follow_up_card
+                    )
+                    await turn_context.send_activity(
+                        Activity(
+                            type=ActivityTypes.message,
+                            attachments=[follow_up_card_attachment]
+                        )
+                    )
+                    return
 
-    async def handle_user_query(self, turn_context: TurnContext):
-        """Handle user query, call external API and respond."""
+            elif "feedback_type" in data:
+                feedback_type = data["feedback_type"]
+                feedback_details = self.collect_feedback_details(data, feedback_type)
+
+                # Generate final feedback message
+                final_message = self.finalize_feedback(feedback_type, feedback_details)
+
+                # Send the final feedback response
+                await turn_context.send_activity(final_message)
+                return
+
         user_message = turn_context.activity.text
         try:
             user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
