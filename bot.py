@@ -50,38 +50,7 @@ class MyBot(ActivityHandler):
     def create_feedback_card(self, feedback, original_text):
         """Create an adaptive card based on the feedback type."""
         if feedback == "like":
-            return {
-                "type": "AdaptiveCard",
-                "body": [
-                    {
-                        "type": "TextBlock",
-                        "text": "Thank you! Can you tell us what you found helpful?",
-                        "wrap": True
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "title": "Helpful",
-                        "id": "helpful_feedback"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "title": "Clear Explanation",
-                        "id": "clear_feedback"
-                    }
-                ],
-                "actions": [
-                    {
-                        "type": "Action.Submit",
-                        "title": "Submit",
-                        "data": {
-                            "feedback_type": "positive",
-                            "original_text": original_text
-                        }
-                    }
-                ],
-                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                "version": "1.2"
-            }
+            return 
         elif feedback == "dislike":
             return {
                 "type": "AdaptiveCard",
@@ -93,13 +62,28 @@ class MyBot(ActivityHandler):
                     },
                     {
                         "type": "Input.Toggle",
-                        "title": "Confusing",
-                        "id": "confusing_feedback"
+                        "title": "Citations are missing",
+                        "id": "citation_miss"
                     },
                     {
                         "type": "Input.Toggle",
-                        "title": "Not Helpful",
-                        "id": "not_helpful_feedback"
+                        "title": "Citations are wrong",
+                        "id": "citation_wrong"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "title": "Response is not from my data",
+                        "id": "false_response"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "title": "Inaccurate or irrelevant",
+                        "id": "inacc_or_irrel"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "title": "Others",
+                        "id": "others"
                     }
                 ],
                 "actions": [
@@ -120,24 +104,28 @@ class MyBot(ActivityHandler):
         """Collect feedback details based on the feedback type (positive or negative)."""
         feedback_details = []
         if feedback_type == "positive":
-            if data.get("helpful_feedback"):
-                feedback_details.append("Helpful")
-            if data.get("clear_feedback"):
-                feedback_details.append("Clear Explanation")
+            return
         elif feedback_type == "negative":
-            if data.get("confusing_feedback"):
-                feedback_details.append("Confusing")
-            if data.get("not_helpful_feedback"):
-                feedback_details.append("Not Helpful")
+            if data.get("citation_miss"):
+                feedback_details.append("Citations are missing")
+            if data.get("citation_wrong"):
+                feedback_details.append("Citations are wrong")
+            if data.get("false_response"):
+                feedback_details.append("Response is not from my data")
+            if data.get("inacc_or_irrel"):
+                feedback_details.append("Inaccurate or irrelevant")
+            if data.get("others"):
+                feedback_details.append("Others")
         return feedback_details
 
     def finalize_feedback(self, feedback_type, feedback_details):
         """Finalize the feedback message based on feedback details."""
         if feedback_type == "positive":
             feedback_message = "Thank you for your positive feedback!"
+            return f"{feedback_message}"
         elif feedback_type == "negative":
             feedback_message = "Thank you for helping us improve!"
-        return f"{feedback_message} Your feedback: {', '.join(feedback_details)}"
+            return f"{feedback_message} Your feedback: {', '.join(feedback_details)}"
 
     async def handle_user_query(self, turn_context: TurnContext):
         """Handle user query, call external API and respond."""
