@@ -80,8 +80,8 @@ class MyBot(ActivityHandler):
                         except json.JSONDecodeError:
                             message_content = "Failed to parse JSON response"
                         await turn_context.send_activity(message_content)
-                        # Step 3: Send the feedback card after sending the answer
-                        await self.send_feedback_card(turn_context)
+                    # Step 4: Send the response with feedback buttons using the correct method
+                        await self.send_feedback_card(turn_context, message_content)
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
         
