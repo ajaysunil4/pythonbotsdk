@@ -191,14 +191,50 @@ class MyBot(ActivityHandler):
         await self.conversation_state.save_changes(turn_context)
         
     async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str):
-        feedback_card = {
+        initial_feedback_card = {
             "type": "AdaptiveCard",
-            "body": [{"type": "TextBlock","text": response_text,"wrap": True}],
-            "actions": [{"type": "Action.Submit","title": "👍","data": { "feedback": "like", "original_text": response_text }},
-                        {"type": "Action.Submit","title": "👎","data": { "feedback": "dislike", "original_text": response_text }}],
+            "body": [
+                {
+                    "type": "TextBlock",
+                    "text": response_text,
+                    "wrap": True
+                },
+                {
+                    "type": "TextBlock",
+                    "text": "How do you feel about this response?",
+                    "wrap": True,
+                    "separator": True
+                }
+            ],
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "👍 Like",
+                    "data": {
+                        "feedback": "like",
+                        "original_text": response_text
+                    }
+                },
+                {
+                    "type": "Action.Submit",
+                    "title": "👎 Dislike",
+                    "data": {
+                        "feedback": "dislike",
+                        "original_text": response_text
+                    }
+                }
+            ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
         }
 
-        adaptive_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive",content=feedback_card)
-        await turn_context.send_activity(Activity(type=ActivityTypes.message,attachments=[adaptive_card_attachment]))
+        adaptive_card_attachment = Attachment(
+            content_type="application/vnd.microsoft.card.adaptive",
+            content=initial_feedback_card
+        )
+        await turn_context.send_activity(
+            Activity(
+                type=ActivityTypes.message,
+                attachments=[adaptive_card_attachment]
+            )
+        )
