@@ -217,13 +217,14 @@ class MyBot(ActivityHandler):
                     "type": "TextBlock",
                     "text": "How do you feel about this response?",
                     "wrap": True,
-                    "separator": True
+                    "separator": True,
+                    "horizontalAlignment": "Right"
                 }
             ],
             "actions": [
                 {
                     "type": "Action.Submit",
-                    "title": "👍 Like",
+                    "title": "👍",
                     "data": {
                         "feedback": "like",
                         "original_text": response_text
@@ -231,7 +232,7 @@ class MyBot(ActivityHandler):
                 },
                 {
                     "type": "Action.Submit",
-                    "title": "👎 Dislike",
+                    "title": "👎",
                     "data": {
                         "feedback": "dislike",
                         "original_text": response_text
