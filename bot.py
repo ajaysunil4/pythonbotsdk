@@ -267,4 +267,4 @@ class MyBot(ActivityHandler):
             if not feedback_details:
                 return "No feedback provided. Please select at least one option."
             else:
-                return f"Thank you for your feedback: \n{', '.join(feedback_details)}"
+                return f"Thank you for your feedback."
