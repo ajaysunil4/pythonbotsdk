@@ -2,11 +2,10 @@ from botbuilder.core import ActivityHandler, TurnContext, ConversationState
 from botbuilder.schema import Attachment, Activity, ActivityTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
 import uuid
-
 import aiohttp
 import json
 import datetime
-import asyncio 
+import asyncio
 
 class MyBot(ActivityHandler):
     def __init__(self, conversation_state: ConversationState):
@@ -30,6 +29,7 @@ class MyBot(ActivityHandler):
                     return
 
                 elif feedback == "dislike":
+                    # Feedback card with "Others" option and conditional input field
                     follow_up_card = {
                         "type": "AdaptiveCard",
                         "body": [
@@ -79,7 +79,7 @@ class MyBot(ActivityHandler):
                             {
                                 "type": "Input.Text",
                                 "id": "other_feedback_details",
-                                "isVisible": False,
+                                "isMultiline": True,
                                 "placeholder": "Please provide more details...",
                                 "wrap": True
                             }
@@ -256,7 +256,7 @@ class MyBot(ActivityHandler):
         
         # Check for "Others" feedback
         if data.get("others"):
-            other_feedback = data.get("other_feedback_details", "")
+            other_feedback = data.get("other_feedback_details")
             if other_feedback:
                 feedback_details.append(f"Other: {other_feedback}")
         
@@ -264,4 +264,7 @@ class MyBot(ActivityHandler):
 
     def finalize_feedback(self, feedback_type, feedback_details):
         if feedback_type == "negative":
-            return f"Thank you for your feedback. We noted the following issues:\n" + "\n".join([f"- {detail}" for detail in feedback_details])
+            if not feedback_details:
+                return "No feedback provided. Please select at least one option."
+            else:
+                return f"Thank you for your feedback: \n{', '.join(feedback_details)}"
