@@ -2,9 +2,11 @@ from botbuilder.core import ActivityHandler, TurnContext, ConversationState
 from botbuilder.schema import Attachment, Activity, ActivityTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
 import uuid
+
 import aiohttp
 import json
 import datetime
+import asyncio 
 
 class MyBot(ActivityHandler):
     def __init__(self, conversation_state: ConversationState):
@@ -12,6 +14,9 @@ class MyBot(ActivityHandler):
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
+        
+        await turn_context.send_activity(Activity(type=ActivityTypes.typing))
+        await asyncio.sleep(1)  # Small delay to simulate thinking time
         
         if turn_context.activity.value:
             data = turn_context.activity.value
@@ -21,7 +26,6 @@ class MyBot(ActivityHandler):
                 
                 if feedback == "like":
                     feedback_message = "Thank you for your positive feedback!"
-                    
                     await turn_context.send_activity(feedback_message)
                     return
 
@@ -36,7 +40,6 @@ class MyBot(ActivityHandler):
                                 "size": "large",
                                 "wrap": True
                             },
-                            # Subheading
                             {
                                 "type": "TextBlock",
                                 "text": "Your feedback will improve this experience.",
@@ -72,6 +75,13 @@ class MyBot(ActivityHandler):
                                 "type": "Input.Toggle",
                                 "title": "Others",
                                 "id": "others"
+                            },
+                            {
+                                "type": "Input.Text",
+                                "id": "other_feedback_details",
+                                "isVisible": False,
+                                "placeholder": "Please provide more details...",
+                                "wrap": True
                             }
                         ],
                         "actions": [
@@ -102,7 +112,7 @@ class MyBot(ActivityHandler):
 
             elif "feedback_type" in data:
                 feedback_type = data.get("feedback_type")
-                original_text = data.get("original_text", "")  # Handle missing original_text gracefully
+                original_text = data.get("original_text", "")
                 feedback_details = self.collect_feedback_details(data, feedback_type)
 
                 # If the user hasn't selected anything, return an error message
@@ -230,3 +240,28 @@ class MyBot(ActivityHandler):
                 attachments=[adaptive_card_attachment]
             )
         )
+
+    def collect_feedback_details(self, data, feedback_type):
+        feedback_details = []
+        
+        # Add selected feedback reasons
+        if data.get("citation_miss"):
+            feedback_details.append("Citations are missing")
+        if data.get("citation_wrong"):
+            feedback_details.append("Citations are wrong")
+        if data.get("false_response"):
+            feedback_details.append("Response is not from my data")
+        if data.get("inacc_or_irrel"):
+            feedback_details.append("Inaccurate or irrelevant")
+        
+        # Check for "Others" feedback
+        if data.get("others"):
+            other_feedback = data.get("other_feedback_details", "")
+            if other_feedback:
+                feedback_details.append(f"Other: {other_feedback}")
+        
+        return feedback_details
+
+    def finalize_feedback(self, feedback_type, feedback_details):
+        if feedback_type == "negative":
+            return f"Thank you for your feedback. We noted the following issues:\n" + "\n".join([f"- {detail}" for detail in feedback_details])
