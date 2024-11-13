@@ -191,7 +191,7 @@ class MyBot(ActivityHandler):
                 },
                 {
                     "type": "TextBlock",
-                    "text": "How do you feel about this response?",
+                    "text": "",
                     "wrap": True,
                     "separator": True
                 }
