@@ -279,7 +279,7 @@ class MyBot(ActivityHandler):
             if not feedback_details:
                 return "No feedback provided. Please select at least one option."
             else:
-                return f"Thank you for your feedback: \n{', '.join(feedback_details["feedback_text"])}"
+                return f"Thank you for your feedback"
 
     # Method to update feedback in Azure Table Storage
     async def update_feedback_in_table(self, session_id, feedback, feedback_text):
