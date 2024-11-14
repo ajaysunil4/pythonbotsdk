@@ -7,6 +7,7 @@ anyio==4.6.2.post1
 attrs==24.2.0
 azure-core==1.31.0
 azure-cosmos==4.7.0
+azure-data-tables
 azure-storage-blob==12.7.0
 azure-storage-queue==12.4.0
 botbuilder-azure==4.16.2
