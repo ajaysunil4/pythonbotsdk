@@ -1,6 +1,8 @@
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState
 from botbuilder.schema import Attachment, Activity, ActivityTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
+from azure.data.tables import UpdateMode
+import logging
 import uuid
 import aiohttp
 import json
@@ -8,8 +10,9 @@ import datetime
 import asyncio
 
 class MyBot(ActivityHandler):
-    def __init__(self, conversation_state: ConversationState):
+    def __init__(self, conversation_state: ConversationState, table_client):
         self.conversation_state = conversation_state
+        self.table_client = table_client
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
@@ -22,7 +25,16 @@ class MyBot(ActivityHandler):
             if "feedback" in data:
                 feedback = data["feedback"]
                 original_text = data["original_text"]
+
+                feedback_details = self.collect_feedback_details(data, feedback)
+                feedback_text = ", ".join(feedback_details) if feedback_details else ""
+
+                # Use session_id for update
+                session_id = self.sessions[email]['id']  # Use the session_id for the current session
                 
+                # Call the new function to update feedback in Azure Table
+                await self.update_feedback_in_table(session_id, feedback, feedback_text)
+
                 if feedback == "like":
                     feedback_message = "Thank you for your positive feedback!"
                     await turn_context.send_activity(feedback_message)
@@ -245,17 +257,17 @@ class MyBot(ActivityHandler):
         feedback_details = []
         
         # Add selected feedback reasons
-        if data.get("citation_miss"):
+        if data.get("citation_miss") == "true":
             feedback_details.append("Citations are missing")
-        if data.get("citation_wrong"):
+        if data.get("citation_wrong") == "true":
             feedback_details.append("Citations are wrong")
-        if data.get("false_response"):
+        if data.get("false_response") == "true":
             feedback_details.append("Response is not from my data")
-        if data.get("inacc_or_irrel"):
+        if data.get("inacc_or_irrel") == "true":
             feedback_details.append("Inaccurate or irrelevant")
         
         # Check for "Others" feedback
-        if data.get("others"):
+        if data.get("others") == "true":
             other_feedback = data.get("other_feedback_details")
             if other_feedback:
                 feedback_details.append(f"Other: {other_feedback}")
@@ -267,4 +279,29 @@ class MyBot(ActivityHandler):
             if not feedback_details:
                 return "No feedback provided. Please select at least one option."
             else:
-                return f"Thank you for your feedback."
+                return f"Thank you for your feedback: \n{', '.join(feedback_details["feedback_text"])}"
+
+    # Method to update feedback in Azure Table Storage
+    async def update_feedback_in_table(self, session_id, feedback, feedback_text):
+        try:
+            # Query the entity based on session_id
+            entity = self.table_client.query_entities(query_filter=f"session_id eq '{session_id}'")
+            
+            # Convert to list to fetch first matched entity (assuming session_id is unique)
+            entity_list = list(entity)
+            
+            if entity_list:
+                # Get the first entity that matches the session_id
+                feedback_entity = entity_list[0]
+
+                # Update feedback fields
+                feedback_entity["feedback"] = feedback
+                feedback_entity["feedback_text"] = feedback_text
+                
+                # Update the entity in Table Storage
+                self.table_client.update_entity(entity=feedback_entity, mode=UpdateMode.MERGE)
+                logging.info(f"Feedback for session {session_id} updated successfully.")
+            else:
+                logging.error(f"No record found for session_id: {session_id}. Cannot update feedback.")
+        except Exception as e:
+            logging.error(f"Failed to update feedback: {e}")

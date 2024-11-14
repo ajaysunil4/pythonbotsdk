@@ -13,6 +13,7 @@ from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 from bot import MyBot
 from config import DefaultConfig
+from azure.data.tables import TableClient
 
 CONFIG = DefaultConfig()
 
@@ -54,8 +55,8 @@ ADAPTER.on_turn_error = on_error
 memory_storage = MemoryStorage()
 conversation_state = ConversationState(memory_storage)
 
-BOT = MyBot(conversation_state)
-
+table_client = TableClient.from_connection_string(CONFIG.AZURE_BLOB_CONNECTION_STRING, table_name=CONFIG.FEEDBACK_TABLE_NAME)
+BOT = MyBot(conversation_state, table_client)
 
 # Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:
