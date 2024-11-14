@@ -156,17 +156,16 @@ class MyBot(ActivityHandler):
             if timediff.seconds > 300:
                 self.sessions[email]['id'] = str(uuid.uuid4())
         self.sessions[email]['last_query_time'] = datetime.datetime.now()
-        # Check for feedback in activity.value and update feedback in Azure Table
+        
         if turn_context.activity.value and "feedback" in turn_context.activity.value:
             data = turn_context.activity.value
             feedback = data.get("feedback")
-            original_text = data.get("original_text", "")
-            
             feedback_details = self.collect_feedback_details(data, feedback)
             feedback_text = ", ".join(feedback_details) if feedback_details else ""
-            
-            session_id = self.sessions[email]['id']
-            
+
+            # Log the feedback to make sure it’s correct
+            logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
+
             # Update feedback in Azure Table
             await self.update_feedback_in_table(session_id, feedback, feedback_text)
 
