@@ -25,16 +25,7 @@ class MyBot(ActivityHandler):
             if "feedback" in data:
                 feedback = data["feedback"]
                 original_text = data["original_text"]
-
-                feedback_details = self.collect_feedback_details(data, feedback)
-                feedback_text = ", ".join(feedback_details) if feedback_details else ""
-
-                # Use session_id for update
-                session_id = self.sessions[email]['id']  # Use the session_id for the current session
                 
-                # Call the new function to update feedback in Azure Table
-                await self.update_feedback_in_table(session_id, feedback, feedback_text)
-
                 if feedback == "like":
                     feedback_message = "Thank you for your positive feedback!"
                     await turn_context.send_activity(feedback_message)
@@ -131,6 +122,14 @@ class MyBot(ActivityHandler):
                 if not feedback_details and feedback_type == "negative":
                     await turn_context.send_activity("You haven't provided any feedback. Please select at least one option.")
                     return
+                    # Generate the feedback text
+                feedback_text = ", ".join(feedback_details)
+
+                # Retrieve session_id from email sessions
+                session_id = self.sessions.get(email, {}).get('id')
+                
+                # Update Azure Table with detailed feedback
+                await self.update_feedback_in_table(session_id, feedback_type, feedback_text)
 
                 # Generate final feedback message
                 final_message = self.finalize_feedback(feedback_type, feedback_details)
@@ -157,6 +156,19 @@ class MyBot(ActivityHandler):
             if timediff.seconds > 300:
                 self.sessions[email]['id'] = str(uuid.uuid4())
         self.sessions[email]['last_query_time'] = datetime.datetime.now()
+        # Check for feedback in activity.value and update feedback in Azure Table
+        if turn_context.activity.value and "feedback" in turn_context.activity.value:
+            data = turn_context.activity.value
+            feedback = data.get("feedback")
+            original_text = data.get("original_text", "")
+            
+            feedback_details = self.collect_feedback_details(data, feedback)
+            feedback_text = ", ".join(feedback_details) if feedback_details else ""
+            
+            session_id = self.sessions[email]['id']
+            
+            # Update feedback in Azure Table
+            await self.update_feedback_in_table(session_id, feedback, feedback_text)
 
         # Define the API endpoint and payload
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
