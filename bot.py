@@ -1,7 +1,7 @@
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState
 from botbuilder.schema import Attachment, Activity, ActivityTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
-from azure.data.tables import UpdateMode
+from azure.data.tables import UpdateMode, TableClient
 import urllib.parse
 from urllib.parse import quote
 import logging
@@ -14,7 +14,7 @@ import asyncio
 class MyBot(ActivityHandler):
     def __init__(self, conversation_state: ConversationState, table_client, conv_client):
         self.conversation_state = conversation_state
-        self.table_client = table_client
+        self.table_client: TableClient = table_client
         self.conv_client = conv_client
         self.sessions = {}
 
@@ -41,7 +41,7 @@ class MyBot(ActivityHandler):
         
         self.sessions[email]['last_query_time'] = datetime.datetime.now()
         session_id = self.sessions[email]['id']  # Set session_id for consistent use
-
+        logging.error("Step 1 Completed")
         # Handle feedback if present
         if turn_context.activity.value and "feedback" in turn_context.activity.value:
             data = turn_context.activity.value
@@ -58,7 +58,7 @@ class MyBot(ActivityHandler):
             # Send feedback response
             await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
             return
-
+        logging.error("Step 2 Completed")
         # API call setup
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
         payload = {
@@ -75,15 +75,15 @@ class MyBot(ActivityHandler):
                 async with session.post(api_url, json=payload, headers=headers) as response:
                     if response.status == 200:
                         response_text = await response.text()
-                        message_content, row_key = self.process_api_response(response_text)
-                        await self.send_response_with_feedback(turn_context, message_content, row_key)
+                        res = self.process_api_response(response_text)
+                        await self.send_response_with_feedback(turn_context, res["answer"], res["row_key"])
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
         except Exception as e:
             await turn_context.send_activity(f"Error calling API: {str(e)}")
 
         await self.conversation_state.save_changes(turn_context)
-
+        logging.error("Step 3 Completed")
     async def handle_feedback_response(self, turn_context: TurnContext, feedback: str, original_text: str, row_key):
         if feedback == "like":
             await turn_context.send_activity("Thank you for your feedback!")
@@ -175,7 +175,7 @@ class MyBot(ActivityHandler):
         try:
             api_response = json.loads(response_text)
             answer = api_response.get("answer", "No content available")
-            row_key = api_response.get("RowKey", "No content available")
+            row_key = api_response.get("RowKey")
             citations = api_response.get("citations", [])
             
             if citations:
@@ -197,7 +197,7 @@ class MyBot(ActivityHandler):
                 )
                 return f"{answer}{formatted_citations}"
             
-            return answer, row_key
+            return {"answer":answer, "row_key":row_key}
         except json.JSONDecodeError:
             return "Failed to parse JSON response"
 
