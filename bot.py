@@ -167,13 +167,18 @@ class MyBot(ActivityHandler):
         await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[Attachment(content_type="application/vnd.microsoft.card.adaptive", content=initial_feedback_card)]))
 
     def process_api_response(self, response_text):
+        base_url = "https://delekus.sharepoint.com/sites/DelekKBArticles/Shared%20Documents/General/Delek%20KB's/"
         try:
             api_response = json.loads(response_text)
             answer = api_response.get("answer", "No content available")
             citations = api_response.get("citations", [])
             if citations:
-                formatted_citations = "\n\n**Citations:**\n" + "\n".join([f"- {cite}" for cite in citations])
+                formatted_citations = "\n\n**Citations:**\n" + "\n".join([f"- [{cite}]({base_url}{cite})" for cite in citations])
                 return f"{answer}{formatted_citations}"
+            return answer
+        except json.JSONDecodeError:
+            return "Failed to parse JSON response"
+
             return answer
         except json.JSONDecodeError:
             return "Failed to parse JSON response"
