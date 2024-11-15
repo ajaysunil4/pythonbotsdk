@@ -90,7 +90,10 @@ class MyBot(ActivityHandler):
                         await turn_context.send_activity(f"API Error: {response.status}")
         except Exception as e:
             await turn_context.send_activity(f"Error calling API: {str(e)}")
-
+            
+        # Retrieve session_id from email sessions
+        session_id = self.sessions[email]['id']
+        
         #Feedback--->
         if turn_context.activity.value:
             data = turn_context.activity.value
@@ -196,9 +199,6 @@ class MyBot(ActivityHandler):
                     return
                     # Generate the feedback text
                 feedback_text = ", ".join(feedback_details)
-
-                # Retrieve session_id from email sessions
-                session_id = self.sessions[email]['id']
                 
                 logging.info(f"Feedback Type: {feedback_type}, Feedback Details: {feedback_details}")
                 logging.info(f"Session ID: {session_id}")
