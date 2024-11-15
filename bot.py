@@ -75,8 +75,9 @@ class MyBot(ActivityHandler):
                 async with session.post(api_url, json=payload, headers=headers) as response:
                     if response.status == 200:
                         response_text = await response.text()
+                        api_response = json.loads(response_text)
                         res = self.process_api_response(response_text)
-                        await self.send_response_with_feedback(turn_context, res["answer"], res["row_key"])
+                        await self.send_response_with_feedback(turn_context, res, api_response["RowKey"])
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
         except Exception as e:
@@ -197,7 +198,7 @@ class MyBot(ActivityHandler):
                 )
                 return f"{answer}{formatted_citations}"
             
-            return {"answer":answer, "row_key":row_key}
+            return answer
         except json.JSONDecodeError:
             return "Failed to parse JSON response"
 
