@@ -174,7 +174,7 @@ class MyBot(ActivityHandler):
             answer = api_response.get("answer", "No content available")
             citations = api_response.get("citations", [])
             if citations:
-                formatted_citations = "\n\n**Citations:**\n" + "\n".join([f"- [{cite}]({base_url}{urllib.parse.quote(cite)})" for cite in citations])
+                formatted_citations = "\n\n**Citations:**\n" + "\n".join([f"- [{cite.replace('.pdf', '.docx')}]({base_url}{urllib.parse.quote(cite.replace('.pdf', '.docx'))})" for cite in citations])
                 return f"{answer}{formatted_citations}"
             return answer
         except json.JSONDecodeError:
