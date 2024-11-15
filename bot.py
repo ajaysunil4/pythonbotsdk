@@ -53,7 +53,7 @@ class MyBot(ActivityHandler):
             logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
             await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
 
-            if feedback == 'negative':
+            if feedback == 'negative' and not feedback_details[other_feedback]:
                 await turn_context.send_activity("Thank you for your feedback!")
             # Send feedback response
             await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
@@ -142,6 +142,7 @@ class MyBot(ActivityHandler):
                                 "type": "Input.Text",
                                 "id": "other_feedback_details",
                                 "isMultiline": True,
+                                "isRequired": True,
                                 "placeholder": "Please provide more details...",
                                 "wrap": True
                             }
@@ -149,6 +150,10 @@ class MyBot(ActivityHandler):
             "actions": [{
                 "type": "Action.Submit",
                 "title": "Submit",
+                "msTeams": {
+               "feedback": {
+               "hide": True
+               }},
                 "data": {"feedback": "negative", "original_text": original_text, "row_key":row_key}
             }],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -245,5 +250,7 @@ class MyBot(ActivityHandler):
         if data.get("others") == "true":
             other_feedback = data.get("other_feedback_details")
             if other_feedback:
-                feedback_details.append(f"Other: {other_feedback}")
+                feedback_details.append(f"{other_feedback}")
+        if data.get("other_feedback_details"):
+            feedback_details.append(f"{other_feedback}")
         return feedback_details
