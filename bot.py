@@ -3,6 +3,7 @@ from botbuilder.schema import Attachment, Activity, ActivityTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
 from azure.data.tables import UpdateMode
 import urllib.parse
+from urllib.parse import quote
 import logging
 import uuid
 import aiohttp
@@ -74,7 +75,7 @@ class MyBot(ActivityHandler):
                     if response.status == 200:
                         response_text = await response.text()
                         message_content = self.process_api_response(response_text)
-                        await self.send_response_with_feedback(turn_context, message_content)
+                        await self.send_response_with_feedback(turn_context, user_message)
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
         except Exception as e:
@@ -201,7 +202,7 @@ class MyBot(ActivityHandler):
     async def update_feedback_in_table(self, session_id, feedback, feedback_text, question):
         try:
             # Query for the entity using the `session_id` as a filter
-            query = f"session_id eq '{session_id}' and question eq '{question}'"
+            query = f"session_id eq '{session_id}' and question eq '{quote(question)}'"
             entities = list(self.table_client.query_entities(query_filter=query))
 
             if not entities:
