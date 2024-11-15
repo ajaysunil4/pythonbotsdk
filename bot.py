@@ -350,5 +350,5 @@ class MyBot(ActivityHandler):
         if data.get("others") == "true":
                 feedback_details.append(f"Other")
         if data.get("other_feedback_details","") != "":
-            other = f"{data.get("other_feedback_details")}"
+            other = data.get("other_feedback_details")
         return (feedback_details, other)
