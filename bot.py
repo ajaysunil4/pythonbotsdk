@@ -47,15 +47,17 @@ class MyBot(ActivityHandler):
             data = turn_context.activity.value
             feedback = data.get("feedback")
             row_key = data.get("row_key")
-            feedback_details = self.collect_feedback_details(data, feedback)
+            feedback_details, other = self.collect_feedback_details(data, feedback)
             feedback_text = ", ".join(feedback_details) if feedback_details else ""
             original_text = data.get("original_text", "")
             logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
-            await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
 
             if feedback == 'negative':
+                await self.update_feedback_in_table(session_id, "dislike", feedback_text, row_key, other)
                 await turn_context.send_activity("Thank you for your feedback!")
             # Send feedback response
+            if feedback != "dislike":
+                await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
             await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
             return
         logging.error("Step 2 Completed")
@@ -89,8 +91,14 @@ class MyBot(ActivityHandler):
         if feedback == "like":
             await turn_context.send_activity("Thank you for your feedback!")
         elif feedback == "dislike":
-            await self.send_follow_up_feedback_card(turn_context, original_text, row_key)
-
+            data = turn_context.activity.value
+            feedback_details = data.get("other_feedback_details", "")
+            # await self.send_follow_up_feedback_card(turn_context, original_text, row_key)
+            if not feedback_details:
+                follow_up_card = self.create_follow_up_card_with_error(original_text, row_key)
+                await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[follow_up_card]))
+            else:
+                await self.send_follow_up_feedback_card(turn_context, original_text, row_key)
     async def send_follow_up_feedback_card(self, turn_context: TurnContext, original_text: str, row_key):
         follow_up_card = {
             "type": "AdaptiveCard",
@@ -145,15 +153,18 @@ class MyBot(ActivityHandler):
                                 "isRequired": True,
                                 "placeholder": "Please provide more details...",
                                 "wrap": True
+                            },
+                            {
+                                "type": "TextBlock",
+                                "id": "error_message",
+                                "text": "This field is required.",
+                                "color": "attention",
+                                "isVisible": False
                             }
                         ],
             "actions": [{
                 "type": "Action.Submit",
                 "title": "Submit",
-                "msTeams": {
-               "feedback": {
-               "hide": True
-               }},
                 "data": {"feedback": "negative", "original_text": original_text, "row_key":row_key}
             }],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -161,6 +172,90 @@ class MyBot(ActivityHandler):
         }
         follow_up_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive", content=follow_up_card)
         await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[follow_up_card_attachment]))
+
+    def create_follow_up_card_with_error(self, original_text, row_key):
+        follow_up_card = {
+            "type": "AdaptiveCard",
+            "body": [
+                {
+                    "type": "TextBlock",
+                    "text": "Submit Feedback",
+                    "weight": "bolder",
+                    "size": "large",
+                    "wrap": True
+                },
+                {
+                    "type": "TextBlock",
+                    "text": "Your feedback will improve this experience.",
+                    "isSubtle": True,
+                    "wrap": True
+                },
+                {
+                    "type": "TextBlock",
+                    "text": "Why wasn't the response helpful?",
+                    "wrap": True
+                },
+                {
+                    "type": "Input.Toggle",
+                    "title": "Citations are missing",
+                    "id": "citation_miss"
+                },
+                {
+                    "type": "Input.Toggle",
+                    "title": "Citations are wrong",
+                    "id": "citation_wrong"
+                },
+                {
+                    "type": "Input.Toggle",
+                    "title": "Response is not from my data",
+                    "id": "false_response"
+                },
+                {
+                    "type": "Input.Toggle",
+                    "title": "Inaccurate or irrelevant",
+                    "id": "inacc_or_irrel"
+                },
+                {
+                    "type": "Input.Toggle",
+                    "title": "Others",
+                    "id": "others"
+                },
+                {
+                    "type": "Input.Text",
+                    "id": "other_feedback_details",
+                    "isMultiline": True,
+                    "isRequired": True,
+                    "placeholder": "Please provide more details...",
+                    "wrap": True
+                },
+                {
+                    "type": "TextBlock",
+                    "id": "error_message",
+                    "text": "This field is required.",
+                    "color": "attention",
+                    "isVisible": True
+                }
+            ],
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "Submit",
+                    "msTeams": {
+                        "feedback": {
+                            "hide": True
+                        }
+                    },
+                    "data": {
+                        "feedback": "negative",
+                        "original_text": original_text,
+                        "row_key": row_key
+                    }
+                }
+            ],
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.2"
+        }
+        return Attachment(content_type="application/vnd.microsoft.card.adaptive", content=follow_up_card)
 
     async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, row_key):
         initial_feedback_card = {
@@ -207,7 +302,7 @@ class MyBot(ActivityHandler):
         except json.JSONDecodeError:
             return "Failed to parse JSON response"
 
-    async def update_feedback_in_table(self, session_id, feedback, feedback_text, row_key):
+    async def update_feedback_in_table(self, session_id, feedback, feedback_text, row_key, other=None):
         try:
             # Query for the entity using the `session_id` as a filter
             query = f"RowKey eq '{row_key}'"
@@ -216,22 +311,26 @@ class MyBot(ActivityHandler):
             if not entities:
                 entities = list(self.conv_client.query_entities(query_filter=query))
                 
-                if not entities:
-                    logging.warning(f"No entity found for session_id: {session_id}. Skipping feedback update.")
-                    return
-                entity = entities[0]
-                entity['feedback'] = feedback
-                entity['feedback_text'] = feedback_text
-
-                # Update the entity in Table Storage
-                self.table_client.create_entity(entity=entity)
+            if not entities:
+                logging.warning(f"No entity found for session_id: {session_id}. Skipping feedback update.")
                 return
             entity = entities[0]
             entity['feedback'] = feedback
             entity['feedback_text'] = feedback_text
-
+            entity['PartitionKey'] = "Feedback"
+            if other:
+                entity['other_feedback'] = other
             # Update the entity in Table Storage
-            self.table_client.update_entity(entity=entity, mode=UpdateMode.MERGE)
+            self.table_client.create_entity(entity=entity)
+            # return
+            # entity = entities[0]
+            # entity['feedback'] = feedback
+            # entity['feedback_text'] = feedback_text
+            # if other:
+            #     entity['other_feedback'] = other
+
+            # # Update the entity in Table Storage
+            # self.table_client.update_entity(entity=entity, mode=UpdateMode.MERGE)
             logging.info(f"Feedback successfully updated for session {session_id}")
         except Exception as e:
             logging.error(f"Failed to update feedback for session {session_id}: {e}")
@@ -239,6 +338,7 @@ class MyBot(ActivityHandler):
 
     def collect_feedback_details(self, data, feedback_type):
         feedback_details = []
+        other = None
         if data.get("citation_miss") == "true":
             feedback_details.append("Citations are missing")
         if data.get("citation_wrong") == "true":
@@ -248,9 +348,7 @@ class MyBot(ActivityHandler):
         if data.get("inacc_or_irrel") == "true":
             feedback_details.append("Inaccurate or irrelevant")
         if data.get("others") == "true":
-            other_feedback = data.get("other_feedback_details")
-            if other_feedback:
-                feedback_details.append(f"{other_feedback}")
-        if data.get("other_feedback_details"):
-            feedback_details.append(f"{other_feedback}")
-        return feedback_details
+                feedback_details.append(f"Other")
+        if data.get("other_feedback_details","") != "":
+            other = f"{data.get("other_feedback_details")}"
+        return (feedback_details, other)
