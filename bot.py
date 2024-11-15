@@ -53,7 +53,7 @@ class MyBot(ActivityHandler):
             logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
             await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
 
-            if feedback == 'negative' and not feedback_details[other_feedback]:
+            if feedback == 'negative':
                 await turn_context.send_activity("Thank you for your feedback!")
             # Send feedback response
             await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
