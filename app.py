@@ -56,7 +56,8 @@ memory_storage = MemoryStorage()
 conversation_state = ConversationState(memory_storage)
 
 table_client = TableClient.from_connection_string(CONFIG.AZURE_BLOB_CONNECTION_STRING, table_name=CONFIG.FEEDBACK_TABLE_NAME)
-BOT = MyBot(conversation_state, table_client)
+conv_client = TableClient.from_connection_string(CONFIG.AZURE_BLOB_CONNECTION_STRING, table_name=CONFIG.CONVERSATION_TABLE_NAME)
+BOT = MyBot(conversation_state, table_client, conv_client)
 
 # Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:

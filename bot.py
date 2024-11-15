@@ -10,9 +10,10 @@ import datetime
 import asyncio
 
 class MyBot(ActivityHandler):
-    def __init__(self, conversation_state: ConversationState, table_client):
+    def __init__(self, conversation_state: ConversationState, table_client, conv_client):
         self.conversation_state = conversation_state
         self.table_client = table_client
+        self.conv_client = conv_client
         self.sessions = {}
 
     async def on_message_activity(self, turn_context: TurnContext):
@@ -45,19 +46,15 @@ class MyBot(ActivityHandler):
             feedback = data.get("feedback")
             feedback_details = self.collect_feedback_details(data, feedback)
             feedback_text = ", ".join(feedback_details) if feedback_details else ""
-            
+            original_text = data.get("original_text", "")
             logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
-            await self.update_feedback_in_table(session_id, feedback, feedback_text)
+            await self.update_feedback_in_table(session_id, feedback, feedback_text,original_text)
 
+            if feedback == 'negative':
+                await turn_context.send_activity("Thank you for your feedback!")
             # Send feedback response
-            await self.handle_feedback_response(turn_context, feedback, data.get("original_text", ""))
+            await self.handle_feedback_response(turn_context, feedback, original_text)
             return
-        
-        # if turn_context.activity.value and "feedback_type" in turn_context.activity.value:
-        #     data = turn_context.activity.value
-        #     feedback_type = data.get("feedback_type")
-        #     #write the logic for storing it 
-        #     return
 
         # API call setup
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
@@ -86,7 +83,7 @@ class MyBot(ActivityHandler):
 
     async def handle_feedback_response(self, turn_context: TurnContext, feedback: str, original_text: str):
         if feedback == "like":
-            await turn_context.send_activity("Thank you for your positive feedback!")
+            await turn_context.send_activity("Thank you for your feedback!")
         elif feedback == "dislike":
             await self.send_follow_up_feedback_card(turn_context, original_text)
 
@@ -148,7 +145,7 @@ class MyBot(ActivityHandler):
             "actions": [{
                 "type": "Action.Submit",
                 "title": "Submit",
-                "data": {"feedback_type": "negative", "original_text": original_text}
+                "data": {"feedback": "negative", "original_text": original_text}
             }],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
@@ -181,20 +178,30 @@ class MyBot(ActivityHandler):
         except json.JSONDecodeError:
             return "Failed to parse JSON response"
 
-    async def update_feedback_in_table(self, session_id, feedback, feedback_text):
+    async def update_feedback_in_table(self, session_id, feedback, feedback_text, question):
         try:
             # Query for the entity using the `session_id` as a filter
-            query = f"session_id eq '{session_id}'"
+            query = f"session_id eq '{session_id}' and question eq '{question}'"
             entities = list(self.table_client.query_entities(query_filter=query))
 
             if not entities:
-                logging.warning(f"No entity found for session_id: {session_id}. Skipping feedback update.")
+                entities = list(self.conv_client.query_entities(query_filter=query))
+                
+                if not entities:
+                    logging.warning(f"No entity found for session_id: {session_id}. Skipping feedback update.")
+                    return
+                entity = entities[0]
+                entity['feedback'] = feedback
+                entity['feedback_text'] = feedback_text
+
+                # Update the entity in Table Storage
+                self.table_client.create_entity(entity=entity)
                 return
-            
             entity = entities[0]
             entity['feedback'] = feedback
             entity['feedback_text'] = feedback_text
 
+            # Update the entity in Table Storage
             self.table_client.update_entity(entity=entity, mode=UpdateMode.MERGE)
             logging.info(f"Feedback successfully updated for session {session_id}")
         except Exception as e:
