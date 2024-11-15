@@ -46,16 +46,17 @@ class MyBot(ActivityHandler):
         if turn_context.activity.value and "feedback" in turn_context.activity.value:
             data = turn_context.activity.value
             feedback = data.get("feedback")
+            row_key = data.get("row_key")
             feedback_details = self.collect_feedback_details(data, feedback)
             feedback_text = ", ".join(feedback_details) if feedback_details else ""
             original_text = data.get("original_text", "")
             logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
-            await self.update_feedback_in_table(session_id, feedback, feedback_text,original_text)
+            await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
 
             if feedback == 'negative':
                 await turn_context.send_activity("Thank you for your feedback!")
             # Send feedback response
-            await self.handle_feedback_response(turn_context, feedback, original_text)
+            await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
             return
 
         # API call setup
@@ -74,8 +75,8 @@ class MyBot(ActivityHandler):
                 async with session.post(api_url, json=payload, headers=headers) as response:
                     if response.status == 200:
                         response_text = await response.text()
-                        message_content = self.process_api_response(response_text)
-                        await self.send_response_with_feedback(turn_context, user_message)
+                        message_content, row_key = self.process_api_response(response_text)
+                        await self.send_response_with_feedback(turn_context, message_content, row_key)
                     else:
                         await turn_context.send_activity(f"API Error: {response.status}")
         except Exception as e:
@@ -83,13 +84,13 @@ class MyBot(ActivityHandler):
 
         await self.conversation_state.save_changes(turn_context)
 
-    async def handle_feedback_response(self, turn_context: TurnContext, feedback: str, original_text: str):
+    async def handle_feedback_response(self, turn_context: TurnContext, feedback: str, original_text: str, row_key):
         if feedback == "like":
             await turn_context.send_activity("Thank you for your feedback!")
         elif feedback == "dislike":
-            await self.send_follow_up_feedback_card(turn_context, original_text)
+            await self.send_follow_up_feedback_card(turn_context, original_text, row_key)
 
-    async def send_follow_up_feedback_card(self, turn_context: TurnContext, original_text: str):
+    async def send_follow_up_feedback_card(self, turn_context: TurnContext, original_text: str, row_key):
         follow_up_card = {
             "type": "AdaptiveCard",
                         "body": [
@@ -147,7 +148,7 @@ class MyBot(ActivityHandler):
             "actions": [{
                 "type": "Action.Submit",
                 "title": "Submit",
-                "data": {"feedback": "negative", "original_text": original_text}
+                "data": {"feedback": "negative", "original_text": original_text, "row_key":row_key}
             }],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
@@ -155,13 +156,13 @@ class MyBot(ActivityHandler):
         follow_up_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive", content=follow_up_card)
         await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[follow_up_card_attachment]))
 
-    async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str):
+    async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, row_key):
         initial_feedback_card = {
             "type": "AdaptiveCard",
             "body": [{"type": "TextBlock", "text": response_text, "wrap": True}],
             "actions": [
-                {"type": "Action.Submit", "title": "👍", "data": {"feedback": "like", "original_text": response_text}},
-                {"type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike", "original_text": response_text}}
+                {"type": "Action.Submit", "title": "👍", "data": {"feedback": "like", "original_text": response_text, "row_key":row_key}},
+                {"type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike", "original_text": response_text, "row_key":row_key}}
             ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
@@ -174,6 +175,7 @@ class MyBot(ActivityHandler):
         try:
             api_response = json.loads(response_text)
             answer = api_response.get("answer", "No content available")
+            row_key = api_response.get("RowKey", "No content available")
             citations = api_response.get("citations", [])
             
             if citations:
@@ -195,14 +197,14 @@ class MyBot(ActivityHandler):
                 )
                 return f"{answer}{formatted_citations}"
             
-            return answer
+            return answer, row_key
         except json.JSONDecodeError:
             return "Failed to parse JSON response"
 
-    async def update_feedback_in_table(self, session_id, feedback, feedback_text, question):
+    async def update_feedback_in_table(self, session_id, feedback, feedback_text, row_key):
         try:
             # Query for the entity using the `session_id` as a filter
-            query = f"session_id eq '{session_id}' and question eq '{quote(question)}'"
+            query = f"RowKey eq '{row_key}'"
             entities = list(self.table_client.query_entities(query_filter=query))
 
             if not entities:
