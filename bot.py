@@ -177,11 +177,12 @@ class MyBot(ActivityHandler):
 
     async def update_feedback_in_table(self, session_id, feedback, feedback_text):
         try:
-            query = f"session_id eq '{session_id}'"
+            # Query for the entity using the `session_id` as a filter
+            query = f"PartitionKey eq '{session_id}'"
             entities = list(self.table_client.query_entities(query_filter=query))
 
             if not entities:
-                logging.error(f"No matching entity for session_id: {session_id}")
+                logging.warning(f"No entity found for session_id: {session_id}. Skipping feedback update.")
                 return
             
             entity = entities[0]
@@ -189,9 +190,10 @@ class MyBot(ActivityHandler):
             entity['feedback_text'] = feedback_text
 
             self.table_client.update_entity(entity=entity, mode=UpdateMode.MERGE)
-            logging.info(f"Feedback updated for session {session_id}")
+            logging.info(f"Feedback successfully updated for session {session_id}")
         except Exception as e:
-            logging.error(f"Failed to update feedback: {e}")
+            logging.error(f"Failed to update feedback for session {session_id}: {e}")
+
 
     def collect_feedback_details(self, data, feedback_type):
         feedback_details = []
