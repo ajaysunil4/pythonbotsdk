@@ -18,8 +18,80 @@ class MyBot(ActivityHandler):
     async def on_message_activity(self, turn_context: TurnContext):
         
         await turn_context.send_activity(Activity(type=ActivityTypes.typing))
-        await asyncio.sleep(1)  # Small delay to simulate thinking time
+        await asyncio.sleep(1)
+
+        user_message = turn_context.activity.text
+        try:
+            user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
+            username = user_profile.name
+            email = user_profile.email
+        except Exception as e:
+            await turn_context.send_activity(f"Could not retrieve user info: {str(e)}")
+            return
         
+        # Session handling logic
+        if email not in self.sessions.keys():
+            self.sessions[email] = {}
+            self.sessions[email]['id'] = str(uuid.uuid4())
+        else:
+            timediff = datetime.datetime.now() - self.sessions[email]['last_query_time']
+            if timediff.seconds > 300:
+                self.sessions[email]['id'] = str(uuid.uuid4())
+        self.sessions[email]['last_query_time'] = datetime.datetime.now()
+        
+        if turn_context.activity.value and "feedback" in turn_context.activity.value:
+            data = turn_context.activity.value
+            feedback = data.get("feedback")
+            feedback_details = self.collect_feedback_details(data, feedback)
+            feedback_text = ", ".join(feedback_details) if feedback_details else ""
+
+            # Log the feedback to make sure it’s correct
+            logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
+
+            # Update feedback in Azure Table
+            await self.update_feedback_in_table(session_id, feedback, feedback_text)
+
+        # Define the API endpoint and payload
+        api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
+        payload = {
+            "question": user_message,
+            "session_id": self.sessions[email]['id'],
+            "username": username,
+            "email": email
+        }
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(api_url, json=payload, headers=headers) as response:
+                    if response.status == 200:
+                        response_text = await response.text()
+                        try:
+                            api_response = json.loads(response_text)
+                            answer = api_response.get("answer", "No content available")
+                            citations = api_response.get("citations", [])
+
+                            if isinstance(citations, list) and citations:
+                                formatted_citations = "\n\n**Citations:**\n" + "\n".join(
+                                    [f"- {cite}" for cite in citations]
+                                )
+                                message_content = f"{answer}{formatted_citations}"
+                            else:
+                                message_content = answer
+                        except json.JSONDecodeError:
+                            message_content = "Failed to parse JSON response"
+                        
+                        # Send the response along with feedback options
+                        await self.send_response_with_feedback(turn_context, message_content)
+                    else:
+                        await turn_context.send_activity(f"API Error: {response.status}")
+        except Exception as e:
+            await turn_context.send_activity(f"Error calling API: {str(e)}")
+
+        #Feedback--->
         if turn_context.activity.value:
             data = turn_context.activity.value
             if "feedback" in data:
@@ -136,77 +208,6 @@ class MyBot(ActivityHandler):
 
                 final_message = self.finalize_feedback(feedback_type, feedback_details)
                 await turn_context.send_activity(final_message)
-
-        user_message = turn_context.activity.text
-        try:
-            user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
-            username = user_profile.name
-            email = user_profile.email
-        except Exception as e:
-            await turn_context.send_activity(f"Could not retrieve user info: {str(e)}")
-            return
-        
-        # Session handling logic
-        if email not in self.sessions.keys():
-            self.sessions[email] = {}
-            self.sessions[email]['id'] = str(uuid.uuid4())
-        else:
-            timediff = datetime.datetime.now() - self.sessions[email]['last_query_time']
-            if timediff.seconds > 300:
-                self.sessions[email]['id'] = str(uuid.uuid4())
-        self.sessions[email]['last_query_time'] = datetime.datetime.now()
-        
-        if turn_context.activity.value and "feedback" in turn_context.activity.value:
-            data = turn_context.activity.value
-            feedback = data.get("feedback")
-            feedback_details = self.collect_feedback_details(data, feedback)
-            feedback_text = ", ".join(feedback_details) if feedback_details else ""
-
-            # Log the feedback to make sure it’s correct
-            logging.info(f"Feedback: {feedback}, Details: {feedback_text}")
-
-            # Update feedback in Azure Table
-            await self.update_feedback_in_table(session_id, feedback, feedback_text)
-
-        # Define the API endpoint and payload
-        api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
-        payload = {
-            "question": user_message,
-            "session_id": self.sessions[email]['id'],
-            "username": username,
-            "email": email
-        }
-
-        headers = {
-            "Content-Type": "application/json"
-        }
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(api_url, json=payload, headers=headers) as response:
-                    if response.status == 200:
-                        response_text = await response.text()
-                        try:
-                            api_response = json.loads(response_text)
-                            answer = api_response.get("answer", "No content available")
-                            citations = api_response.get("citations", [])
-
-                            if isinstance(citations, list) and citations:
-                                formatted_citations = "\n\n**Citations:**\n" + "\n".join(
-                                    [f"- {cite}" for cite in citations]
-                                )
-                                message_content = f"{answer}{formatted_citations}"
-                            else:
-                                message_content = answer
-                        except json.JSONDecodeError:
-                            message_content = "Failed to parse JSON response"
-                        
-                        # Send the response along with feedback options
-                        await self.send_response_with_feedback(turn_context, message_content)
-                    else:
-                        await turn_context.send_activity(f"API Error: {response.status}")
-        except Exception as e:
-            await turn_context.send_activity(f"Error calling API: {str(e)}")
 
         # Save conversation state
         await self.conversation_state.save_changes(turn_context)
