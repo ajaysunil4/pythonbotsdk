@@ -52,6 +52,12 @@ class MyBot(ActivityHandler):
             # Send feedback response
             await self.handle_feedback_response(turn_context, feedback, data.get("original_text", ""))
             return
+        
+        # if turn_context.activity.value and "feedback_type" in turn_context.activity.value:
+        #     data = turn_context.activity.value
+        #     feedback_type = data.get("feedback_type")
+        #     #write the logic for storing it 
+        #     return
 
         # API call setup
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
@@ -178,7 +184,7 @@ class MyBot(ActivityHandler):
     async def update_feedback_in_table(self, session_id, feedback, feedback_text):
         try:
             # Query for the entity using the `session_id` as a filter
-            query = f"PartitionKey eq '{session_id}'"
+            query = f"session_id eq '{session_id}'"
             entities = list(self.table_client.query_entities(query_filter=query))
 
             if not entities:
