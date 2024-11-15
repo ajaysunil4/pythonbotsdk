@@ -2,6 +2,7 @@ from botbuilder.core import ActivityHandler, TurnContext, ConversationState
 from botbuilder.schema import Attachment, Activity, ActivityTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
 from azure.data.tables import UpdateMode
+import urllib.parse
 import logging
 import uuid
 import aiohttp
@@ -173,7 +174,7 @@ class MyBot(ActivityHandler):
             answer = api_response.get("answer", "No content available")
             citations = api_response.get("citations", [])
             if citations:
-                formatted_citations = "\n\n**Citations:**\n" + "\n".join([f"- [{cite}]({base_url}{cite})" for cite in citations])
+                formatted_citations = "\n\n**Citations:**\n" + "\n".join([f"- [{cite}]({base_url}{urllib.parse.quote(cite)})" for cite in citations])
                 return f"{answer}{formatted_citations}"
             return answer
         except json.JSONDecodeError:
