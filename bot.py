@@ -128,6 +128,9 @@ class MyBot(ActivityHandler):
                 # Retrieve session_id from email sessions
                 session_id = self.sessions[email]['id']
                 
+                logging.info(f"Feedback Type: {feedback_type}, Feedback Details: {feedback_details}")
+                logging.info(f"Session ID: {session_id}")
+                
                 # Update Azure Table with detailed feedback
                 await self.update_feedback_in_table(session_id, feedback_type, feedback_text)
 
