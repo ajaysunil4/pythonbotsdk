@@ -131,12 +131,8 @@ class MyBot(ActivityHandler):
                 # Update Azure Table with detailed feedback
                 await self.update_feedback_in_table(session_id, feedback_type, feedback_text)
 
-                # Generate final feedback message
                 final_message = self.finalize_feedback(feedback_type, feedback_details)
-
-                # Send the final feedback response
                 await turn_context.send_activity(final_message)
-                return
 
         user_message = turn_context.activity.text
         try:
@@ -295,24 +291,20 @@ class MyBot(ActivityHandler):
     # Method to update feedback in Azure Table Storage
     async def update_feedback_in_table(self, session_id, feedback, feedback_text):
         try:
-            # Query the entity based on session_id
-            entity = self.table_client.query_entities(query_filter=f"session_id eq '{session_id}'")
-            
-            # Convert to list to fetch first matched entity (assuming session_id is unique)
-            entity_list = list(entity)
-            
-            if entity_list:
-                # Get the first entity that matches the session_id
-                feedback_entity = entity_list[0]
+            # Assuming `PartitionKey` and `RowKey` are properly configured in Azure Table Storage
+            query = f"session_id eq '{session_id}'"
+            entities = list(self.table_client.query_entities(query_filter=query))
 
-                # Update feedback fields
-                feedback_entity["feedback"] = feedback
-                feedback_entity["feedback_text"] = feedback_text
-                
-                # Update the entity in Table Storage
-                self.table_client.update_entity(entity=feedback_entity, mode=UpdateMode.MERGE)
-                logging.info(f"Feedback for session {session_id} updated successfully.")
-            else:
-                logging.error(f"No record found for session_id: {session_id}. Cannot update feedback.")
+            if not entities:
+                logging.error(f"No matching entity for session_id: {session_id}")
+                return
+            
+            entity = entities[0]  # Get the matched entity
+            entity['feedback'] = feedback
+            entity['feedback_text'] = feedback_text
+
+            # Update in Azure Table Storage
+            self.table_client.update_entity(entity=entity, mode=UpdateMode.MERGE)
+            logging.info(f"Feedback updated for session {session_id}")
         except Exception as e:
             logging.error(f"Failed to update feedback: {e}")
