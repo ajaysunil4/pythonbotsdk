@@ -169,17 +169,31 @@ class MyBot(ActivityHandler):
 
     def process_api_response(self, response_text):
         base_url = "https://delekus.sharepoint.com/sites/DelekKBArticles/Shared%20Documents/General/Delek%20KB's/"
+        
         try:
             api_response = json.loads(response_text)
             answer = api_response.get("answer", "No content available")
             citations = api_response.get("citations", [])
+            
             if citations:
-                formatted_citations = "\n\n**Citations:**\n" + "\n".join([f"- [{cite.replace('.pdf', '.docx')}]({base_url}{urllib.parse.quote(cite.replace('.pdf', '.docx'))})" for cite in citations])
+                formatted_citations = "\n\n**Citations:**\n"
+                
+                def convert_to_docx(cite):
+                    # Decode the citation for easier manipulation
+                    decoded_cite = urllib.parse.unquote(cite)
+                    # Check the extension and only replace it if not already .docx
+                    if not decoded_cite.lower().endswith(".docx"):
+                        import re
+                        decoded_cite = re.sub(r'(\.[^.]+)$', '.docx', decoded_cite)
+                    # Re-encode to make it URL-safe
+                    return urllib.parse.quote(decoded_cite)
+                
+                formatted_citations += "\n".join(
+                    [f"- [{urllib.parse.unquote(cite).replace('.pdf', '.docx')}]({base_url}{convert_to_docx(cite)})"
+                    for cite in citations]
+                )
                 return f"{answer}{formatted_citations}"
-            return answer
-        except json.JSONDecodeError:
-            return "Failed to parse JSON response"
-
+            
             return answer
         except json.JSONDecodeError:
             return "Failed to parse JSON response"
