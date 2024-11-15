@@ -99,6 +99,7 @@ class MyBot(ActivityHandler):
                 await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[follow_up_card]))
             else:
                 await self.send_follow_up_feedback_card(turn_context, original_text, row_key)
+                await self.close_feedback_form(turn_context)
     async def send_follow_up_feedback_card(self, turn_context: TurnContext, original_text: str, row_key):
         follow_up_card = {
             "type": "AdaptiveCard",
@@ -153,13 +154,6 @@ class MyBot(ActivityHandler):
                                 "isRequired": True,
                                 "placeholder": "Please provide more details...",
                                 "wrap": True
-                            },
-                            {
-                                "type": "TextBlock",
-                                "id": "error_message",
-                                "text": "This field is required.",
-                                "color": "attention",
-                                "isVisible": False
                             }
                         ],
             "actions": [{
@@ -256,6 +250,17 @@ class MyBot(ActivityHandler):
             "version": "1.2"
         }
         return Attachment(content_type="application/vnd.microsoft.card.adaptive", content=follow_up_card)
+
+    async def close_feedback_form(self, turn_context: TurnContext):
+        # Send an empty card to effectively close the form
+        empty_card = {
+            "type": "AdaptiveCard",
+            "body": [],
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.2"
+        }
+        empty_card_attachment = Attachment(content_type="application/vnd.microsoft.card.adaptive", content=empty_card)
+        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[empty_card_attachment]))
 
     async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, row_key):
         initial_feedback_card = {
