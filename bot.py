@@ -23,12 +23,24 @@ class MyBot(ActivityHandler):
         await asyncio.sleep(1)
 
         user_message = turn_context.activity.text
+        action_payload = turn_context.activity.value 
         try:
             user_profile = await TeamsInfo.get_member(turn_context, turn_context.activity.from_property.id)
             username = user_profile.name
             email = user_profile.email
         except Exception as e:
             await turn_context.send_activity(f"Could not retrieve user info: {str(e)}")
+            return
+        
+        # Handle reset context action
+        if action_payload and action_payload.get("action") == "reset_context":
+            await self.clear_user_context(email, turn_context)
+            await turn_context.send_activity("Your context has been reset. How can I assist you?")
+            return
+
+        # Handle other messages like "help"
+        if user_message == "clear chat":
+            await self.send_reset_context_button(turn_context)
             return
         
         # Session handling logic
@@ -357,3 +369,36 @@ class MyBot(ActivityHandler):
         if data.get("other_feedback_details","") != "":
             other = data.get("other_feedback_details")
         return (feedback_details, other)
+
+    async def send_reset_context_button(self, turn_context: TurnContext):
+        reset_context_card = {
+            "type": "AdaptiveCard",
+            "body": [
+                {
+                    "type": "TextBlock",
+                    "text": "Would you like to reset your session context?",
+                    "wrap": True
+                }
+            ],
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "Reset Context",
+                    "data": {"action": "reset_context"}
+                }
+            ],
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.2"
+        }
+        reset_context_card_attachment = Attachment(
+            content_type="application/vnd.microsoft.card.adaptive",
+            content=reset_context_card
+        )
+        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[reset_context_card_attachment]))
+
+    async def clear_user_context(self, email: str, turn_context: TurnContext):
+        # Clear the session and any other related context
+        if email in self.sessions:
+            del self.sessions[email]
+        await self.conversation_state.delete_state(turn_context)
+        logging.info(f"User context cleared for {email}")
