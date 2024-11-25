@@ -38,6 +38,9 @@ class MyBot(ActivityHandler):
             await self.clear_user_context(email, turn_context)
             await turn_context.send_activity("Your context has been reset. How can I assist you?")
             return
+        elif action_payload == "cancel":
+            await turn_context.send_activity("Reset action canceled. Let me know if I can help you with something else.")
+            return
 
         # Handle other messages like "help"
         if user_message == "clear chat":
@@ -371,56 +374,37 @@ class MyBot(ActivityHandler):
             other = data.get("other_feedback_details")
         return (feedback_details, other)
 
-    # async def send_reset_context_button(self, turn_context: TurnContext):
-    #     reset_context_card = {
-    #         "type": "AdaptiveCard",
-    #         "body": [
-    #             {
-    #                 "type": "TextBlock",
-    #                 "text": "Would you like to reset your session context?",
-    #                 "wrap": True
-    #             }
-    #         ],
-    #         "actions": [
-    #             {
-    #                 "type": "Action.Submit",
-    #                 "title": "Reset Context",
-    #                 "data": {"action": "reset_context"}
-    #             }
-    #         ],
-    #         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-    #         "version": "1.2"
-    #     }
-    #     reset_context_card_attachment = Attachment(
-    #         content_type="application/vnd.microsoft.card.adaptive",
-    #         content=reset_context_card
-    #     )
-    #     await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[reset_context_card_attachment]))
-
     async def send_reset_context_button(self, turn_context: TurnContext):
-        """
-        Sends a message with a suggested action to reset the context.
-        """
-        suggested_actions = SuggestedActions(
-            actions=[
-                CardAction(
-                    type=ActionTypes.im_back,
-                    title="Reset Context",
-                    value="Reset Context"
-                ),
-                CardAction(
-                    type=ActionTypes.im_back,
-                    title="Cancel",
-                    value="Cancel"
-                )
-            ]
+        reset_context_card = {
+            "type": "AdaptiveCard",
+            "body": [
+                {
+                    "type": "TextBlock",
+                    "text": "Would you like to reset your session context?",
+                    "wrap": True
+                }
+            ],
+            "actions": [
+                {
+                    "type": "Action.Submit",
+                    "title": "Reset Context",
+                    "data": {"action": "reset_context"}
+                },
+                {
+                    "type": "Action.Submit",
+                    "title": "Cancel",
+                    "data": {"action": "cancel"}
+                }
+            ],
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.2"
+        }
+        reset_context_card_attachment = Attachment(
+            content_type="application/vnd.microsoft.card.adaptive",
+            content=reset_context_card
         )
-        await turn_context.send_activity(
-            MessageFactory.text(
-                "Would you like to reset the conversation context?",
-                suggested_actions=suggested_actions
-            )
-        )
+        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[reset_context_card_attachment]))
+
 
     async def clear_user_context(self, email, turn_context: TurnContext):
         """
