@@ -42,11 +42,18 @@ class MyBot(ActivityHandler):
             await turn_context.send_activity("Reset action canceled. Let me know if I can help you with something else.")
             return
 
-        # Handle other messages like "help"
-        if user_message == "clear chat":
-            await self.send_reset_context_button(turn_context)
-            return
+        # # Handle other messages like "help"
+        # if user_message == "clear context":
+        #     await self.send_reset_context_button(turn_context)
+        #     return
         
+        user_input = turn_context.activity.text.strip().lower()
+        if user_input == "clear context":
+            await self.send_reset_context_button(turn_context)
+        else:
+            # Handle normal bot response
+            await turn_context.send_activity(f"You said: {user_input}")
+            
         # Session handling logic
         if email not in self.sessions:
             self.sessions[email] = {'id': str(uuid.uuid4())}

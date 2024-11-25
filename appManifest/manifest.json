@@ -1,0 +1,60 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.14/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.14",
+    "version": "1.0.0",
+    "id": "519f3388-7506-4b5b-a8c9-193d34653f25",
+    "packageName": "com.delek.MyDelekAssistant",
+    "developer": {
+      "name": "Mouritech",
+      "websiteUrl": "https://www.mouritech.com/",
+      "privacyUrl": "https://www.mouritech.com/privacy-policy-mouri-tech/",
+      "termsOfUseUrl": "https://www.mouritech.com/privacy-policy-mouri-tech/"
+    },
+    "icons": {
+      "outline": "outline.png",
+      "color": "color.png"
+    },
+    "name": {
+      "short": "My Delek Assistant",
+      "full": "My Delek Assistant"
+    },
+  "description": {
+    "short": "Delek chat assistant",
+    "full": "Delek chat assistant"
+  },
+    "accentColor": "#FFFFFF",
+    "bots": [
+      {
+        "botId": "2dc376e5-3cc8-4be0-ba93-d1d1e279d7d2",
+        "scopes": [
+          "personal",
+          "groupchat",
+          "team"
+        ],
+        "isNotificationOnly": false,
+        "supportsCalling": false,
+        "supportsVideo": false,
+        "supportsFiles": false,
+          "commandLists": [
+          {
+            "scopes": [
+              "personal",
+              "groupchat",
+              "team"
+            ],
+            "commands": [
+              {
+                "title": "Clear context",
+                "description": "Clear the context and start a new conversation"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "permissions": [
+      "identity",
+      "messageTeamMembers"
+    ],
+    "validDomains": ["https://apitestbot-e6c2fcc4ekhtdnbd.southcentralus-01.azurewebsites.net"]
+  }
