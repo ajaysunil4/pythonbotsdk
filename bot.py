@@ -1,5 +1,5 @@
-from botbuilder.core import ActivityHandler, TurnContext, ConversationState
-from botbuilder.schema import Attachment, Activity, ActivityTypes
+from botbuilder.core import ActivityHandler, TurnContext, ConversationState, MessageFactory
+from botbuilder.schema import Attachment, Activity, ActivityTypes, SuggestedActions, CardAction, ActionTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
 from azure.data.tables import UpdateMode, TableClient
 import urllib.parse
@@ -396,9 +396,35 @@ class MyBot(ActivityHandler):
         )
         await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[reset_context_card_attachment]))
 
-    async def clear_user_context(self, email: str, turn_context: TurnContext):
-        # Clear the session and any other related context
+    async def send_context_reset_suggested_action(self, turn_context: TurnContext):
+        """
+        Sends a message with a suggested action to reset the context.
+        """
+        suggested_actions = SuggestedActions(
+            actions=[
+                CardAction(
+                    type=ActionTypes.im_back,
+                    title="Reset Context",
+                    value="Reset Context"
+                ),
+                CardAction(
+                    type=ActionTypes.im_back,
+                    title="Cancel",
+                    value="Cancel"
+                )
+            ]
+        )
+        await turn_context.send_activity(
+            MessageFactory.text(
+                "Would you like to reset the conversation context?",
+                suggested_actions=suggested_actions
+            )
+        )
+
+    async def clear_user_context(self, email, turn_context: TurnContext):
+        """
+        Clears the user context stored in the session.
+        """
         if email in self.sessions:
             del self.sessions[email]
-        await self.conversation_state.delete_state(turn_context)
-        logging.info(f"User context cleared for {email}")
+        await turn_context.send_activity("The context has been successfully reset.")
