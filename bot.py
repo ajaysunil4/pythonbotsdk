@@ -1,4 +1,5 @@
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState, MessageFactory
+from botbuilder.core.teams import TeamsActivityHandler
 from botbuilder.schema import Attachment, Activity, ActivityTypes, SuggestedActions, CardAction, ActionTypes
 from botbuilder.core.teams.teams_info import TeamsInfo
 from azure.data.tables import UpdateMode, TableClient
@@ -12,7 +13,7 @@ import datetime
 import asyncio
 
 
-class MyBot(ActivityHandler):
+class MyBot(TeamsActivityHandler):
     def __init__(self, conversation_state: ConversationState, table_client, conv_client):
         self.conversation_state = conversation_state
         self.table_client: TableClient = table_client
@@ -50,6 +51,7 @@ class MyBot(ActivityHandler):
         user_input = turn_context.activity.text.strip().lower()
         if user_input == "clear context":
             await self.send_reset_context_button(turn_context)
+            return
             
         # Session handling logic
         if email not in self.sessions:
