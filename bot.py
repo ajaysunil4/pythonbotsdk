@@ -5,6 +5,7 @@ from azure.data.tables import UpdateMode, TableClient
 import urllib.parse
 from urllib.parse import quote
 import logging
+
 import uuid
 import aiohttp
 import json
