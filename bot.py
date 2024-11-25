@@ -11,6 +11,7 @@ import json
 import datetime
 import asyncio
 
+
 class MyBot(ActivityHandler):
     def __init__(self, conversation_state: ConversationState, table_client, conv_client):
         self.conversation_state = conversation_state
