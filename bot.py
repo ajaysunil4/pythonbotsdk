@@ -371,33 +371,33 @@ class MyBot(ActivityHandler):
             other = data.get("other_feedback_details")
         return (feedback_details, other)
 
-    async def send_reset_context_button(self, turn_context: TurnContext):
-        reset_context_card = {
-            "type": "AdaptiveCard",
-            "body": [
-                {
-                    "type": "TextBlock",
-                    "text": "Would you like to reset your session context?",
-                    "wrap": True
-                }
-            ],
-            "actions": [
-                {
-                    "type": "Action.Submit",
-                    "title": "Reset Context",
-                    "data": {"action": "reset_context"}
-                }
-            ],
-            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-            "version": "1.2"
-        }
-        reset_context_card_attachment = Attachment(
-            content_type="application/vnd.microsoft.card.adaptive",
-            content=reset_context_card
-        )
-        await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[reset_context_card_attachment]))
+    # async def send_reset_context_button(self, turn_context: TurnContext):
+    #     reset_context_card = {
+    #         "type": "AdaptiveCard",
+    #         "body": [
+    #             {
+    #                 "type": "TextBlock",
+    #                 "text": "Would you like to reset your session context?",
+    #                 "wrap": True
+    #             }
+    #         ],
+    #         "actions": [
+    #             {
+    #                 "type": "Action.Submit",
+    #                 "title": "Reset Context",
+    #                 "data": {"action": "reset_context"}
+    #             }
+    #         ],
+    #         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    #         "version": "1.2"
+    #     }
+    #     reset_context_card_attachment = Attachment(
+    #         content_type="application/vnd.microsoft.card.adaptive",
+    #         content=reset_context_card
+    #     )
+    #     await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[reset_context_card_attachment]))
 
-    async def send_context_reset_suggested_action(self, turn_context: TurnContext):
+    async def send_reset_context_button(self, turn_context: TurnContext):
         """
         Sends a message with a suggested action to reset the context.
         """
