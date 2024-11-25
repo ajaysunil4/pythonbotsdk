@@ -37,7 +37,7 @@ class MyBot(TeamsActivityHandler):
         # Handle reset context action
         if action_payload and action_payload.get("action") == "reset_context":
             await self.clear_user_context(email, turn_context)
-            await turn_context.send_activity("Your context has been reset. How can I assist you?")
+            # await turn_context.send_activity("Your context has been reset. Is there anything else I could assist you with?")
             return
         elif action_payload and action_payload.get("action") == "cancel":
             await turn_context.send_activity("Reset action canceled. Let me know if I can help you with something else.")
@@ -418,4 +418,4 @@ class MyBot(TeamsActivityHandler):
         """
         if email in self.sessions:
             del self.sessions[email]
-        await turn_context.send_activity("The context has been successfully reset.")
+        await turn_context.send_activity("Your context has been reset. Is there anything else I could assist you with?")
