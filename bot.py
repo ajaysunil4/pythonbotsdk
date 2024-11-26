@@ -48,10 +48,10 @@ class MyBot(TeamsActivityHandler):
         #     await self.send_reset_context_button(turn_context)
         #     return
         
-        user_input = turn_context.activity.text.strip().lower()
-        if user_input == "clear context":
-            await self.send_reset_context_button(turn_context)
-            return
+        # user_input = turn_context.activity.text.strip().lower()
+        # if user_input == "clear context":
+        #     await self.send_reset_context_button(turn_context)
+        #     return
             
         # Session handling logic
         if email not in self.sessions:
