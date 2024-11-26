@@ -82,7 +82,7 @@ class MyBot(TeamsActivityHandler):
                 await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
             await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
             return
-        if turn_context.activity.value and turn_context.activity.value.get("action") == "clear_context":
+        elif turn_context.activity.value and turn_context.activity.value.get("action") == "clear_context":
             await self.send_reset_context_button(turn_context)
             return
         logging.error("Step 2 Completed")
@@ -186,23 +186,17 @@ class MyBot(TeamsActivityHandler):
     async def send_response_with_feedback(self, turn_context: TurnContext, response_text: str, row_key):
         initial_feedback_card = {
             "type": "AdaptiveCard",
-            "body": [ { "type": "TextBlock", "text": response_text, "wrap": True },
-                { "type": "ActionSet",
-                    "actions": [
-                        { "type": "Action.Submit", "title": "👍", "data": {"feedback": "like", "original_text": response_text, "row_key": row_key}},
-                        { "type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike", "original_text": response_text, "row_key": row_key}}
-                    ]
-                },
-                { "type": "ActionSet",
-                    "actions": [
-                        { "type": "Action.Submit", "title": "Clear Context", "data": {"action": "clear_context"}}
-                    ]
-                }
+            "body": [{"type": "TextBlock", "text": response_text, "wrap": True}],
+            "actions": [
+                { "type": "Action.Submit", "title": "👍", "data": {"feedback": "like", "original_text": response_text, "row_key":row_key}},
+                { "type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike", "original_text": response_text, "row_key":row_key}},
+                { "type": "Action.Submit", "title": "❌", "data": {"action": "clear_context"} },
             ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
         }
         await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[Attachment(content_type="application/vnd.microsoft.card.adaptive", content=initial_feedback_card)]))
+
     def process_api_response(self, response_text):
         base_url = "https://delekus.sharepoint.com/sites/DelekKBArticles/Shared%20Documents/General/Delek%20KB's/"
         
