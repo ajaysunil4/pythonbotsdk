@@ -189,8 +189,6 @@ class MyBot(TeamsActivityHandler):
             "actions": [
                 { "type": "Action.Submit", "title": "👍", "data": {"feedback": "like", "original_text": response_text, "row_key":row_key}},
                 { "type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike", "original_text": response_text, "row_key":row_key}},
-            ],
-            "actions": [
                 { "type": "Action.Submit", "title": "Clear Context", "data": {"action": "clear_context"} },
             ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
