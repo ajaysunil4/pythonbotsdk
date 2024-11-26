@@ -84,6 +84,7 @@ class MyBot(TeamsActivityHandler):
             return
         if turn_context.activity.value and turn_context.activity.value.get("action") == "clear_context":
             await self.send_reset_context_button(turn_context)
+            return
         logging.error("Step 2 Completed")
         # API call setup
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
