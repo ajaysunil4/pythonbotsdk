@@ -81,8 +81,6 @@ class MyBot(TeamsActivityHandler):
             if feedback != "dislike":
                 await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
             await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
-            if feedback == "clear_context":
-                await self.send_reset_context_button(turn_context)
             return
         logging.error("Step 2 Completed")
         # API call setup
@@ -124,6 +122,8 @@ class MyBot(TeamsActivityHandler):
             else:
                 await self.send_follow_up_feedback_card(turn_context, original_text, row_key)
                 await self.close_feedback_form(turn_context)
+        if feedback == "clear_context":
+            await self.send_reset_context_button(turn_context)
     async def send_follow_up_feedback_card(self, turn_context: TurnContext, original_text: str, row_key):
         follow_up_card = {
             "type": "AdaptiveCard",
