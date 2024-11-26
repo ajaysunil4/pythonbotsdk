@@ -82,6 +82,8 @@ class MyBot(TeamsActivityHandler):
                 await self.update_feedback_in_table(session_id, feedback, feedback_text, row_key)
             await self.handle_feedback_response(turn_context, feedback, original_text, row_key)
             return
+        if turn_context.activity.value and turn_context.activity.value.get("action") == "clear_context":
+            await self.send_reset_context_button(turn_context)
         logging.error("Step 2 Completed")
         # API call setup
         api_url = "https://dk-fa-ai-dev.azurewebsites.net/api/chatbotResponder?code=FVQY4AF8kdsmUO0A-qrYPRter8Vw8E3Y1WgNjmAWBkluAzFuIoQoHQ%3D%3D"
@@ -195,8 +197,7 @@ class MyBot(TeamsActivityHandler):
             "version": "1.2"
         }
         await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[Attachment(content_type="application/vnd.microsoft.card.adaptive", content=initial_feedback_card)]))
-        if turn_context.activity.value and turn_context.activity.value.get("action") == "clear_context":
-            await self.send_reset_context_button(turn_context)
+
     def process_api_response(self, response_text):
         base_url = "https://delekus.sharepoint.com/sites/DelekKBArticles/Shared%20Documents/General/Delek%20KB's/"
         
