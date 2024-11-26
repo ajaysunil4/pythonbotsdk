@@ -126,62 +126,17 @@ class MyBot(TeamsActivityHandler):
         follow_up_card = {
             "type": "AdaptiveCard",
                         "body": [
-                            {
-                                "type": "TextBlock",
-                                "text": "Submit Feedback",
-                                "weight": "bolder",
-                                "size": "large",
-                                "wrap": True
-                            },
-                            {
-                                "type": "TextBlock",
-                                "text": "Your feedback will improve this experience.",
-                                "isSubtle": True,
-                                "wrap": True
-                            },
-                            {
-                                "type": "TextBlock",
-                                "text": "Why wasn't the response helpful?",
-                                "wrap": True
-                            },
-                            {
-                                "type": "Input.Toggle",
-                                "title": "Citations are missing",
-                                "id": "citation_miss"
-                            },
-                            {
-                                "type": "Input.Toggle",
-                                "title": "Citations are wrong",
-                                "id": "citation_wrong"
-                            },
-                            {
-                                "type": "Input.Toggle",
-                                "title": "Response is not from my data",
-                                "id": "false_response"
-                            },
-                            {
-                                "type": "Input.Toggle",
-                                "title": "Inaccurate or irrelevant",
-                                "id": "inacc_or_irrel"
-                            },
-                            {
-                                "type": "Input.Toggle",
-                                "title": "Others",
-                                "id": "others"
-                            },
-                            {
-                                "type": "Input.Text",
-                                "id": "other_feedback_details",
-                                "isMultiline": True,
-                                "isRequired": True,
-                                "placeholder": "Please provide more details...",
-                                "wrap": True
-                            }
+                            { "type": "TextBlock", "text": "Submit Feedback", "weight": "bolder", "size": "large", "wrap": True },
+                            { "type": "TextBlock", "text": "Your feedback will improve this experience.", "isSubtle": True, "wrap": True },
+                            { "type": "TextBlock", "text": "Why wasn't the response helpful?", "wrap": True },
+                            { "type": "Input.Toggle", "title": "Citations are missing", "id": "citation_miss" },
+                            { "type": "Input.Toggle", "title": "Citations are wrong", "id": "citation_wrong" },
+                            { "type": "Input.Toggle", "title": "Response is not from my data", "id": "false_response" },
+                            { "type": "Input.Toggle", "title": "Inaccurate or irrelevant", "id": "inacc_or_irrel" },
+                            { "type": "Input.Toggle", "title": "Others", "id": "others" },
+                            { "type": "Input.Text", "id": "other_feedback_details", "isMultiline": True, "isRequired": True, "placeholder": "Please provide more details...", "wrap": True }
                         ],
-            "actions": [{
-                "type": "Action.Submit",
-                "title": "Submit",
-                "data": {"feedback": "negative", "original_text": original_text, "row_key":row_key}
+            "actions": [{ "type": "Action.Submit", "title": "Submit", "data": {"feedback": "negative", "original_text": original_text, "row_key":row_key }
             }],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
@@ -193,79 +148,20 @@ class MyBot(TeamsActivityHandler):
         follow_up_card = {
             "type": "AdaptiveCard",
             "body": [
-                {
-                    "type": "TextBlock",
-                    "text": "Submit Feedback",
-                    "weight": "bolder",
-                    "size": "large",
-                    "wrap": True
-                },
-                {
-                    "type": "TextBlock",
-                    "text": "Your feedback will improve this experience.",
-                    "isSubtle": True,
-                    "wrap": True
-                },
-                {
-                    "type": "TextBlock",
-                    "text": "Why wasn't the response helpful?",
-                    "wrap": True
-                },
-                {
-                    "type": "Input.Toggle",
-                    "title": "Citations are missing",
-                    "id": "citation_miss"
-                },
-                {
-                    "type": "Input.Toggle",
-                    "title": "Citations are wrong",
-                    "id": "citation_wrong"
-                },
-                {
-                    "type": "Input.Toggle",
-                    "title": "Response is not from my data",
-                    "id": "false_response"
-                },
-                {
-                    "type": "Input.Toggle",
-                    "title": "Inaccurate or irrelevant",
-                    "id": "inacc_or_irrel"
-                },
-                {
-                    "type": "Input.Toggle",
-                    "title": "Others",
-                    "id": "others"
-                },
-                {
-                    "type": "Input.Text",
-                    "id": "other_feedback_details",
-                    "isMultiline": True,
-                    "isRequired": True,
-                    "placeholder": "Please provide more details...",
-                    "wrap": True
-                },
-                {
-                    "type": "TextBlock",
-                    "id": "error_message",
-                    "text": "This field is required.",
-                    "color": "attention",
-                    "isVisible": True
-                }
+                { "type": "TextBlock", "text": "Submit Feedback", "weight": "bolder", "size": "large", "wrap": True },
+                { "type": "TextBlock", "text": "Your feedback will improve this experience.", "isSubtle": True, "wrap": True },
+                { "type": "TextBlock", "text": "Why wasn't the response helpful?", "wrap": True },
+                { "type": "Input.Toggle", "title": "Citations are missing", "id": "citation_miss" },
+                { "type": "Input.Toggle", "title": "Citations are wrong", "id": "citation_wrong" },
+                { "type": "Input.Toggle", "title": "Response is not from my data", "id": "false_response" },
+                { "type": "Input.Toggle", "title": "Inaccurate or irrelevant", "id": "inacc_or_irrel" },
+                { "type": "Input.Toggle", "title": "Others", "id": "others" },
+                { "type": "Input.Text", "id": "other_feedback_details", "isMultiline": True, "isRequired": True, "placeholder": "Please provide more details...", "wrap": True },
+                { "type": "TextBlock", "id": "error_message", "text": "This field is required.", "color": "attention", "isVisible": True }
             ],
             "actions": [
-                {
-                    "type": "Action.Submit",
-                    "title": "Submit",
-                    "msTeams": {
-                        "feedback": {
-                            "hide": True
-                        }
-                    },
-                    "data": {
-                        "feedback": "negative",
-                        "original_text": original_text,
-                        "row_key": row_key
-                    }
+                { "type": "Action.Submit", "title": "Submit", "msTeams": { "feedback": { "hide": True } },
+                    "data": { "feedback": "negative", "original_text": original_text, "row_key": row_key }
                 }
             ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -289,14 +185,18 @@ class MyBot(TeamsActivityHandler):
             "type": "AdaptiveCard",
             "body": [{"type": "TextBlock", "text": response_text, "wrap": True}],
             "actions": [
-                {"type": "Action.Submit", "title": "👍", "data": {"feedback": "like", "original_text": response_text, "row_key":row_key}},
-                {"type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike", "original_text": response_text, "row_key":row_key}}
+                { "type": "Action.Submit", "title": "👍", "data": {"feedback": "like", "original_text": response_text, "row_key":row_key}},
+                { "type": "Action.Submit", "title": "👎", "data": {"feedback": "dislike", "original_text": response_text, "row_key":row_key}},
+            ],
+            "actions": [
+                { "type": "Action.Submit", "title": "Clear Context", "data": {"action": "clear_context"} },
             ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"
         }
         await turn_context.send_activity(Activity(type=ActivityTypes.message, attachments=[Attachment(content_type="application/vnd.microsoft.card.adaptive", content=initial_feedback_card)]))
-
+        if turn_context.activity.value and turn_context.activity.value.get("action") == "clear_context":
+            await self.send_reset_context_button(turn_context)
     def process_api_response(self, response_text):
         base_url = "https://delekus.sharepoint.com/sites/DelekKBArticles/Shared%20Documents/General/Delek%20KB's/"
         
@@ -384,23 +284,11 @@ class MyBot(TeamsActivityHandler):
         reset_context_card = {
             "type": "AdaptiveCard",
             "body": [
-                {
-                    "type": "TextBlock",
-                    "text": "Would you like to reset your session context?",
-                    "wrap": True
-                }
+                { "type": "TextBlock", "text": "Would you like to reset your session context?", "wrap": True }
             ],
             "actions": [
-                {
-                    "type": "Action.Submit",
-                    "title": "Reset Context",
-                    "data": {"action": "reset_context"}
-                },
-                {
-                    "type": "Action.Submit",
-                    "title": "Cancel",
-                    "data": {"action": "cancel"}
-                }
+                { "type": "Action.Submit", "title": "Reset Context", "data": {"action": "reset_context"} },
+                { "type": "Action.Submit", "title": "Cancel", "data": {"action": "cancel"} }
             ],
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.2"

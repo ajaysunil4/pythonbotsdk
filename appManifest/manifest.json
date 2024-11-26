@@ -3,7 +3,7 @@
     "manifestVersion": "1.14",
     "version": "1.0.0",
     "id": "519f3388-7506-4b5b-a8c9-193d34653f25",
-    "packageName": "com.delek.MyDelekAssistant",
+    "packageName": "com.delekus.dk-bos-ai-dev",
     "developer": {
       "name": "Mouritech",
       "websiteUrl": "https://www.mouritech.com/",
@@ -38,9 +38,7 @@
           "commandLists": [
           {
             "scopes": [
-              "personal",
-              "groupchat",
-              "team"
+              "personal"
             ],
             "commands": [
               {
@@ -56,5 +54,8 @@
       "identity",
       "messageTeamMembers"
     ],
-    "validDomains": ["https://apitestbot-e6c2fcc4ekhtdnbd.southcentralus-01.azurewebsites.net"]
+    "validDomains": ["https://apitestbot-e6c2fcc4ekhtdnbd.southcentralus-01.azurewebsites.net",
+                    "https://apitestbot-e6c2fcc4ekhtdnbd.southcentralus-01.azurewebsites.net/api/messages",
+                    ""
+                    ]
   }
